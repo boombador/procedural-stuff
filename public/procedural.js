@@ -25,37 +25,24 @@ var render = function () {
 
 render();
 
-function createGeometry() {
+function addQuad(geo, offset) {
     var m_width = 1.0;
     var m_length = 1.0;
 
-    //Set up the vertices and triangles:
-    //meshBuilder.Vertices.Add(new Vector3(0.0f, 0.0f, 0.0f));
-    //meshBuilder.UVs.Add(new Vector2(0.0f, 0.0f));
-    //meshBuilder.Normals.Add(Vector3.up);
-
-    //meshBuilder.Vertices.Add(new Vector3(0.0f, 0.0f, m_Length));
-    //meshBuilder.UVs.Add(new Vector2(0.0f, 1.0f));
-    //meshBuilder.Normals.Add(Vector3.up);
-
-    //meshBuilder.Vertices.Add(new Vector3(m_Width, 0.0f, m_Length));
-    //meshBuilder.UVs.Add(new Vector2(1.0f, 1.0f));
-    //meshBuilder.Normals.Add(Vector3.up);
-
-    //meshBuilder.Vertices.Add(new Vector3(m_Width, 0.0f, 0.0f));
-    //meshBuilder.UVs.Add(new Vector2(1.0f, 0.0f));
-    //meshBuilder.Normals.Add(Vector3.up);
-
-
-    var geometry = new THREE.Geometry();
-    geometry.vertices.push(
-        new THREE.Vector3( 0,  0, 0 ),
-        new THREE.Vector3( m_width,  0, 0 ),
-        new THREE.Vector3( m_width, m_length, 0 ),
-        new THREE.Vector3( 0, m_length, 0 )
+    geo.vertices.push(
+        (new THREE.Vector3( 0,  0, 0 )).add(offset),
+        (new THREE.Vector3( m_width,  0, 0 )).add(offset),
+        (new THREE.Vector3( m_width, m_length, 0 )).add(offset),
+        (new THREE.Vector3( 0, m_length, 0 )).add(offset)
     );
-    geometry.faces.push( new THREE.Face3( 0, 1, 2 ) );
-    geometry.faces.push( new THREE.Face3( 0, 2, 3 ) );
+    geo.faces.push( new THREE.Face3( 0, 1, 2 ) );
+    geo.faces.push( new THREE.Face3( 0, 2, 3 ) );
+}
+
+function createGeometry() {
+    var geometry = new THREE.Geometry();
+    var v = new THREE.Vector3();
+    addQuad(geometry, v);
 
     geometry.computeBoundingSphere();
     return geometry;
