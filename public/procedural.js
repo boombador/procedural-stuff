@@ -3,6 +3,7 @@ var WIDTH = 400,
 
 var m_Width = 1.0;
 var m_Length = 1.0;
+var m_Height = 3.0;
 var m_SegmentCount = 10;
 
 var addQuad = function (geo, offset) {
@@ -19,26 +20,64 @@ var addQuad = function (geo, offset) {
     geo.faces.push( new THREE.Face3( baseIndex, baseIndex+2, baseIndex+3 ) );
 }
 
-var createGeometry = function() {
-    var geometry = new THREE.Geometry();
-    var offset = new THREE.Vector3();
+
+// segmentCount x segmentCount
+
+var addQuadForGrid = function(geo, pos, buildTriangles, vertsPerRow) {
+    geo.vertices.push( pos );
+
+    if (buildTriangles) {
+        var baseIndex = geo.vertices.length - 1;
+
+        var index0 = baseIndex;
+        var index1 = baseIndex - 1;
+        var index2 = baseIndex - vertsPerRow;
+        var index3 = baseIndex - vertsPerRow - 1;
+
+        geo.faces.push( new THREE.Face3(index0, index1, index2));
+        geo.faces.push( new THREE.Face3(index2, index1, index3));
+    }
+}
+
+var createConnectedGrid = function(geo){
     var i, j, x, y;
 
-    console.log("starting");
-    console.log("segcount: ", m_SegmentCount);
+    for (i = 0; i <= m_SegmentCount; i++) {
+        y = m_Length * i;
+
+        for (j = 0; j <= m_SegmentCount; j++) {
+            x = m_Width * j;
+
+            var offset = new THREE.Vector3(x, y, Math.random(m_Height));
+            var buildTriangles = i > 0 && j > 0;
+            addQuadForGrid(geo, offset, buildTriangles, m_SegmentCount + 1);
+        }
+    }
+}
+
+var createDisconnectedGrid = function(geo) {
+    var i, j, x, y;
+
     for (i = 0; i < m_SegmentCount; i++) {
         y = m_Length * i;
 
         for (j = 0; j < m_SegmentCount; j++) {
             x = m_Width * j;
 
-            offset.set(x, y, Math.random(3) ); //  = new Vector3(x, Random.Range(0.0f, m_Height), z);
-            console.log(offset);
-            addQuad(geometry, offset);
+            var offset = new THREE.Vector3(x, y, Math.random(m_Height) );
+            addQuad(geo, offset);
         }
     }
+};
 
+var createGeometry = function() {
+    var geometry = new THREE.Geometry();
+
+    // createDisconnectedGrid(geometry);
+    createConnectedGrid(geometry);
     geometry.computeBoundingSphere();
+    geometry.computeFaceNormals();
+    geometry.computeVertexNormals();
     return geometry;
 }
 
@@ -50,9 +89,11 @@ renderer.setSize( WIDTH, HEIGHT );
 document.body.appendChild( renderer.domElement );
 
 var geometry = createGeometry();
-var material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
+//var material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
+var material = new THREE.MeshNormalMaterial( );
 var mesh = new THREE.Mesh( geometry, material );
 scene.add( mesh );
+// soft white light
 
 var axisHelper = new THREE.AxisHelper( 5 );
 scene.add( axisHelper );
