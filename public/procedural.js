@@ -37,9 +37,6 @@ var addQuadForGrid = function(geo, pos, buildTriangles, vertsPerRow) {
 }
 
 var buildDirectedQuad = function(geo, offset, widthDir, lengthDir) {
-    //var normal = new Vector3();
-    //normal.cross(lengthDir, widthDir).normalize();
-
     var v0 = offset.clone();
     var v1 = offset.clone().add(widthDir);
     var v2 = offset.clone().add(lengthDir);
@@ -55,11 +52,37 @@ var buildDirectedQuad = function(geo, offset, widthDir, lengthDir) {
     geo.faces.push(new THREE.Face3(baseIndex, baseIndex + 3, baseIndex + 2));
 }
 
-var upDir = new THREE.Vector3(0, 0, 1);
-var rightDir = new THREE.Vector3(1, 0, 0);
-var forwardDir = new THREE.Vector3(0, 1, 0);
+var createPrism = (function(){
 
-var createCube = (function(){
+    var v1 = new THREE.Vector3(); 
+    var v2 = new THREE.Vector3(); 
+    var v3 = new THREE.Vector3(); 
+    var nearCorner = new THREE.Vector3();
+    var farCorner = new THREE.Vector3().addVectors(v1, v2).add(v3);
+
+    return function(geo, upDir, rightDir, forwardDir) {
+        v1.copy( upDir );
+        v2.copy( rightDir );
+        v3.copy( forwardDir );
+
+        nearCorner.set(0, 0, 0);
+        farCorner.addVectors(v1, v2).add(v3);
+
+        buildDirectedQuad(geo, nearCorner, v3, v2);
+        buildDirectedQuad(geo, nearCorner, v2, v1);
+        buildDirectedQuad(geo, nearCorner, v1, v3);
+
+        v2.multiplyScalar(-1);
+        v3.multiplyScalar(-1);
+        v1.multiplyScalar(-1);
+
+        buildDirectedQuad(geo, farCorner, v2, v3);
+        buildDirectedQuad(geo, farCorner, v1, v2);
+        buildDirectedQuad(geo, farCorner, v3, v1);
+    };
+})();
+
+var createHouse = (function(){
 
     var v1 = new THREE.Vector3(); 
     var v2 = new THREE.Vector3(); 
@@ -125,7 +148,12 @@ var createGeometry = function() {
 
     // createDisconnectedGrid(geometry);
     //createConnectedGrid(geometry);
-    createCube(geometry);
+
+    var upDir = new THREE.Vector3(0, 0, 1);
+    var rightDir = new THREE.Vector3(1, 0, 0);
+    var forwardDir = new THREE.Vector3(0, 1, 0);
+
+    createPrism(geometry, upDir, rightDir, forwardDir);
     geometry.computeBoundingSphere();
     geometry.computeFaceNormals();
     geometry.computeVertexNormals();
