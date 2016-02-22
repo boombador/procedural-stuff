@@ -234,10 +234,19 @@ var createDisconnectedGrid = function(geo) {
     }
 };
 
-var buildCrossPiece = function(geo, start) {
-    var upDir = new THREE.Vector3().addScaledVector(globalUp, m_CrossPieceHeight);
-    var rightDir = new THREE.Vector3().addScaledVector(globalRight, m_DistBetweenPosts);
-    var forwardDir = new THREE.Vector3().addScaledVector(globalForward, m_CrossPieceWidth);
+var buildCrossPiece = function(geo, start, end) {
+
+    var quat = new THREE.Quaternion();
+    var vTo = new THREE.Vector3().subVectors(end, start);
+    quat.setFromUnitVectors(globalRight, vTo);
+
+    var upDir = globalUp.clone().applyQuaternion(quat);
+    var rightDir = globalRight.clone().applyQuaternion(quat);
+    var forwardDir = globalForward.clone().applyQuaternion(quat);
+
+    upDir.multiplyScalar( m_CrossPieceHeight);
+    rightDir.multiplyScalar( vTo.length() );
+    forwardDir.multiplyScalar( m_CrossPieceWidth);
 
     var farCorner = new THREE.Vector3().addVectors(upDir, rightDir).add(forwardDir).add(start);
     var nearCorner = new THREE.Vector3().copy(start);
