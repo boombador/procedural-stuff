@@ -5,15 +5,24 @@ var m_Width = 1.0;
 var m_Length = 1.0;
 var m_Height = 3.0;
 var m_SegmentCount = 10;
+
 var m_RoofHeight = 0.5;
 var m_RoofOverhangSide = 0.2;
 var m_RoofOverhangFront = 0.1;
 
-var globalUp = new THREE.Vector3( 0, 1, 0 );
+var m_PostHeight = 0.8;
+var m_PostWidth = 0.2;
+var m_SectionCount = 10;
+var m_DistBetweenPosts = 1;
+var m_CrossPieceHeight = 0.2;
+var m_CrossPieceWidth = 0.1;
+var m_CrossPieceY = 0.4;
+var m_PostHeightVariation = 0.3;
+var m_CrossPieceYVariation = 0.2;
 
 var globalRight = new THREE.Vector3(1, 0, 0);
 var globalUp = new THREE.Vector3(0, 1, 0);
-var globalForward = new THREE.Vector3(0, 0, -1);
+var globalForward = new THREE.Vector3(0, 0, 1);
 
 var addQuad = function (geo, offset) {
     console.log("generating mesh with offset:", offset);
@@ -57,8 +66,8 @@ var buildDirectedQuad = function(geo, offset, widthDir, lengthDir) {
     geo.vertices.push(v3);
 
     var baseIndex = geo.vertices.length - 4;
-    geo.faces.push(new THREE.Face3(baseIndex, baseIndex + 1, baseIndex + 3));
-    geo.faces.push(new THREE.Face3(baseIndex, baseIndex + 3, baseIndex + 2));
+    geo.faces.push(new THREE.Face3(baseIndex, baseIndex + 2, baseIndex + 1));
+    geo.faces.push(new THREE.Face3(baseIndex + 1, baseIndex + 2, baseIndex + 3));
 }
 
 var createPrism = (function(){
@@ -139,11 +148,11 @@ var createHouse = (function(){
         wallTopLeft.subVectors(vUp, pivotOffset);
         wallTopRight.addVectors(vUp, vRight).sub(pivotOffset);
 
-        addTri(geo, wallTopLeft.clone(), wallTopRight.clone(), roofPeak.clone());
+        addTri(geo, wallTopLeft.clone(), roofPeak.clone(), wallTopRight.clone());
         roofPeak.add(vForward);
         wallTopLeft.add(vForward);
         wallTopRight.add(vForward);
-        addTri(geo, wallTopLeft.clone(), roofPeak.clone(), wallTopRight.clone());
+        addTri(geo, wallTopLeft.clone(), wallTopRight.clone(), roofPeak.clone());
 
         roofPeak.sub(vForward);
         wallTopLeft.sub(vForward);
@@ -157,47 +166,42 @@ var createHouse = (function(){
         dirFromPeakLeft.addScaledVector(normDirFromPeakLeft, m_RoofOverhangSide);
         dirFromPeakRight.addScaledVector(normDirFromPeakRight, m_RoofOverhangSide);
 
-         roofPeak.addScaledVector( globalForward, -m_RoofOverhangFront);
+        roofPeak.addScaledVector( globalForward, -m_RoofOverhangFront);
         vForward.addScaledVector( globalForward, m_RoofOverhangFront * 2);
 
         buildDirectedQuad(geo, roofPeak, vForward, dirFromPeakLeft);
         buildDirectedQuad(geo, roofPeak, dirFromPeakRight, vForward);
         buildDirectedQuad(geo, roofPeak, dirFromPeakLeft, vForward);
         buildDirectedQuad(geo, roofPeak, vForward, dirFromPeakRight);
-
-
-        // roof:
-
-        /*Vector3 roofPeak = Vector3.up * (m_Height + m_RoofHeight) + rightDir * 0.5f - pivotOffset;
-
-        Vector3 wallTopLeft = upDir - pivotOffset;
-        Vector3 wallTopRight = upDir + rightDir - pivotOffset;
-
-        BuildTriangle(meshBuilder, wallTopLeft, roofPeak, wallTopRight);
-        BuildTriangle(meshBuilder, wallTopLeft + forwardDir, wallTopRight + forwardDir, roofPeak + forwardDir);
-
-        Vector3 dirFromPeakLeft = wallTopLeft - roofPeak;
-        Vector3 dirFromPeakRight = wallTopRight - roofPeak;
-
-        dirFromPeakLeft += dirFromPeakLeft.normalized * m_RoofOverhangSide;
-        dirFromPeakRight += dirFromPeakRight.normalized * m_RoofOverhangSide;
-
-        roofPeak -= Vector3.forward * m_RoofOverhangFront;
-        forwardDir += Vector3.forward * m_RoofOverhangFront * 2.0f;
-
-        //shift the roof slightly upward to stop it intersecting the top of the walls:
-        roofPeak += Vector3.up * m_RoofBias;
-
-        BuildQuad(meshBuilder, roofPeak, forwardDir, dirFromPeakLeft);
-        BuildQuad(meshBuilder, roofPeak, dirFromPeakRight, forwardDir);
-
-        BuildQuad(meshBuilder, roofPeak, dirFromPeakLeft, forwardDir);
-        BuildQuad(meshBuilder, roofPeak, forwardDir, dirFromPeakRight);*/
-
-
-
     };
 })();
+
+var buildPost = function(geo, position) {
+
+    var postHeight = m_PostHeight + Math.random()*m_PostHeightVariation;
+    var upDir = new THREE.Vector3().addScaledVector(globalUp, postHeight);
+    var rightDir = new THREE.Vector3().addScaledVector(globalRight, m_PostWidth);
+    var forwardDir = new THREE.Vector3().addScaledVector(globalForward, m_PostWidth);
+
+    var farCorner = new THREE.Vector3().addVectors(upDir, rightDir).add(forwardDir).add(position);
+    var nearCorner = new THREE.Vector3().copy(position);
+
+    //shift pivot to centre-bottom:
+    var pivotOffset = new THREE.Vector3().addVectors(rightDir, forwardDir).multiplyScalar(0.5);
+    farCorner.sub( pivotOffset );
+    nearCorner.sub( pivotOffset );
+
+    buildDirectedQuad(geo, nearCorner, rightDir, upDir);
+    buildDirectedQuad(geo, nearCorner, upDir, forwardDir);
+
+    upDir.multiplyScalar(-1);
+    rightDir.multiplyScalar(-1);
+    forwardDir.multiplyScalar(-1);
+
+    buildDirectedQuad(geo, farCorner, rightDir, forwardDir);
+    buildDirectedQuad(geo, farCorner, upDir, rightDir);
+    buildDirectedQuad(geo, farCorner, forwardDir, upDir);
+};
 
 var createConnectedGrid = function(geo){
     var i, j, x, y;
@@ -230,17 +234,62 @@ var createDisconnectedGrid = function(geo) {
     }
 };
 
+var buildCrossPiece = function(geo, start) {
+    var upDir = new THREE.Vector3().addScaledVector(globalUp, m_CrossPieceHeight);
+    var rightDir = new THREE.Vector3().addScaledVector(globalRight, m_DistBetweenPosts);
+    var forwardDir = new THREE.Vector3().addScaledVector(globalForward, m_CrossPieceWidth);
+
+    var farCorner = new THREE.Vector3().addVectors(upDir, rightDir).add(forwardDir).add(start);
+    var nearCorner = new THREE.Vector3().copy(start);
+
+    buildDirectedQuad(geo, nearCorner, forwardDir, rightDir);
+    buildDirectedQuad(geo, nearCorner, rightDir, upDir);
+    buildDirectedQuad(geo, nearCorner, upDir, forwardDir);
+
+    upDir.multiplyScalar(-1);
+    rightDir.multiplyScalar(-1);
+    forwardDir.multiplyScalar(-1);
+
+    buildDirectedQuad(geo, farCorner, rightDir, forwardDir);
+    buildDirectedQuad(geo, farCorner, upDir, rightDir);
+    buildDirectedQuad(geo, farCorner, forwardDir, upDir);
+}
+
+
+var prevCrossPosition = new THREE.Vector3(0, 0, 0);
+
+var createFence = function(geo) {
+    for (var i = 0; i <= m_SectionCount; i++) {
+        var offset = new THREE.Vector3().addScaledVector( globalRight, m_DistBetweenPosts * i);
+        buildPost(geo, offset);
+
+        // offset now used for cross piece
+        offset.addScaledVector(globalForward, m_PostWidth * 0.5);
+
+        var randomYStart = m_CrossPieceY + Math.random() * m_CrossPieceYVariation;
+        var randomYEnd = m_CrossPieceY + Math.random() * m_CrossPieceYVariation;
+
+        var crossYOffsetStart = new THREE.Vector3().addScaledVector(globalUp, randomYStart).add(prevCrossPosition);
+        var crossYOffsetEnd = new THREE.Vector3().addScaledVector(globalUp, randomYEnd).add(offset);
+
+        prevCrossPosition.copy(offset);
+        offset.addScaledVector(globalUp, m_CrossPieceY);
+
+        if (i != 0) {
+            buildCrossPiece(geo, crossYOffsetStart, crossYOffsetEnd);
+        }
+    }
+};
+
 var createGeometry = function() {
     var geometry = new THREE.Geometry();
 
-    // createDisconnectedGrid(geometry);
+    //createDisconnectedGrid(geometry);
     //createConnectedGrid(geometry);
+    //createHouse(geometry, upDir, rightDir, forwardDir);
 
-    var rightDir = new THREE.Vector3(1, 0, 0);
-    var upDir = new THREE.Vector3(0, 1, 0);
-    var forwardDir = new THREE.Vector3(0, 0, -1);
+    createFence(geometry);
 
-    createHouse(geometry, upDir, rightDir, forwardDir);
     geometry.computeBoundingSphere();
     geometry.computeFaceNormals();
     geometry.computeVertexNormals();
