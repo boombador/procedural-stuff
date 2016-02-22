@@ -5,9 +5,15 @@ var m_Width = 1.0;
 var m_Length = 1.0;
 var m_Height = 3.0;
 var m_SegmentCount = 10;
-var m_RoofHeight = 1;
-var m_RoofOverhangSide = 0.1;
+var m_RoofHeight = 0.5;
+var m_RoofOverhangSide = 0.2;
 var m_RoofOverhangFront = 0.1;
+
+var globalUp = new THREE.Vector3( 0, 1, 0 );
+
+var globalRight = new THREE.Vector3(1, 0, 0);
+var globalUp = new THREE.Vector3(0, 1, 0);
+var globalForward = new THREE.Vector3(0, 0, -1);
 
 var addQuad = function (geo, offset) {
     console.log("generating mesh with offset:", offset);
@@ -93,9 +99,9 @@ var addTri = function (geo, v1, v2, v3) {
 
 var createHouse = (function(){
 
-    var v1 = new THREE.Vector3(); 
-    var v2 = new THREE.Vector3(); 
-    var v3 = new THREE.Vector3(); 
+    var vUp = new THREE.Vector3(); 
+    var vRight = new THREE.Vector3(); 
+    var vForward = new THREE.Vector3(); 
     var nearCorner = new THREE.Vector3();
     var farCorner = new THREE.Vector3(); // .addVectors(v1, v2).add(v3);
     var pivotOffset = new THREE.Vector3(); // (rightDir + forwardDir) * 0.5f;
@@ -104,58 +110,60 @@ var createHouse = (function(){
     var wallTopRight = new THREE.Vector3();
 
     return function(geo, upDir, rightDir, forwardDir) {
-        v1.copy( upDir );
-        v2.copy( rightDir );
-        v3.copy( forwardDir );
+        vUp.copy( upDir );
+        vRight.copy( rightDir );
+        vForward.copy( forwardDir );
 
         nearCorner.set(0, 0, 0);
-        farCorner.addVectors(v1, v2).add(v3);
+        farCorner.addVectors(vUp, vRight).add(vForward);
 
         // set object origin to base of house
-        pivotOffset.addVectors(rightDir, forwardDir).multiplyScalar(0.5);
+        pivotOffset.addVectors(vRight, vForward).multiplyScalar(0.5);
         farCorner.sub(pivotOffset);
         nearCorner.sub(pivotOffset);
 
         // build horizontal walls
-        buildDirectedQuad(geo, nearCorner, v2, v1);
-        buildDirectedQuad(geo, nearCorner, v1, v3);
-        v2.multiplyScalar(-1);
-        v3.multiplyScalar(-1);
-        v1.multiplyScalar(-1);
-        buildDirectedQuad(geo, farCorner, v1, v2);
-        buildDirectedQuad(geo, farCorner, v3, v1);
-        v2.multiplyScalar(-1);
-        v3.multiplyScalar(-1);
-        v1.multiplyScalar(-1);
+        buildDirectedQuad(geo, nearCorner, vRight, vUp);
+        buildDirectedQuad(geo, nearCorner, vUp, vForward);
+        vRight.multiplyScalar(-1);
+        vForward.multiplyScalar(-1);
+        vUp.multiplyScalar(-1);
+        buildDirectedQuad(geo, farCorner, vUp, vRight);
+        buildDirectedQuad(geo, farCorner, vForward, vUp);
+        vRight.multiplyScalar(-1);
+        vForward.multiplyScalar(-1);
+        vUp.multiplyScalar(-1);
 
         // roof
-        roofPeak.set(0, 0, 0).addScaledVector(upDir, upDir.length() + m_RoofHeight).addScaledVector(rightDir, 0.5); // .sub(pivotOffset);
-        wallTopLeft.subVectors(upDir, pivotOffset);
-        wallTopRight.addVectors(upDir, rightDir).sub(pivotOffset);
+        roofPeak.set(0, 0, 0).addScaledVector(globalUp, vUp.length() + m_RoofHeight).addScaledVector(vRight, 0.5).sub(pivotOffset);
+        wallTopLeft.subVectors(vUp, pivotOffset);
+        wallTopRight.addVectors(vUp, vRight).sub(pivotOffset);
 
         addTri(geo, wallTopLeft.clone(), wallTopRight.clone(), roofPeak.clone());
-        roofPeak.add(forwardDir);
-        wallTopLeft.add(forwardDir);
-        wallTopRight.add(forwardDir);
+        roofPeak.add(vForward);
+        wallTopLeft.add(vForward);
+        wallTopRight.add(vForward);
         addTri(geo, wallTopLeft.clone(), roofPeak.clone(), wallTopRight.clone());
 
+        roofPeak.sub(vForward);
+        wallTopLeft.sub(vForward);
+        wallTopRight.sub(vForward);
 
         var dirFromPeakLeft = new THREE.Vector3().subVectors(wallTopLeft, roofPeak);
         var dirFromPeakRight = new THREE.Vector3().subVectors(wallTopRight, roofPeak);
 
         var normDirFromPeakLeft = dirFromPeakLeft.clone().normalize();
         var normDirFromPeakRight = dirFromPeakRight.clone().normalize();
-        //dirFromPeakLeft.addScaledVector(normDirFromPeakLeft, m_RoofOverhangSide);
-        //dirFromPeakRight.addScaledVector(normDirFromPeakRight, m_RoofOverhangSide);
+        dirFromPeakLeft.addScaledVector(normDirFromPeakLeft, m_RoofOverhangSide);
+        dirFromPeakRight.addScaledVector(normDirFromPeakRight, m_RoofOverhangSide);
 
-        var forward = new THREE.Vector3(0, 0, 1);
-        //roofPeak.addScaledVector( forward, -m_RoofOverhangFront);
-        //forwardDir.addScaledVector( forward, m_RoofOverhangFront * 0);
+         roofPeak.addScaledVector( globalForward, -m_RoofOverhangFront);
+        vForward.addScaledVector( globalForward, m_RoofOverhangFront * 2);
 
-        buildDirectedQuad(geo, roofPeak, forwardDir, dirFromPeakLeft);
-        buildDirectedQuad(geo, roofPeak, dirFromPeakRight, forwardDir);
-        buildDirectedQuad(geo, roofPeak, dirFromPeakLeft, forwardDir);
-        buildDirectedQuad(geo, roofPeak, forwardDir, dirFromPeakRight);
+        buildDirectedQuad(geo, roofPeak, vForward, dirFromPeakLeft);
+        buildDirectedQuad(geo, roofPeak, dirFromPeakRight, vForward);
+        buildDirectedQuad(geo, roofPeak, dirFromPeakLeft, vForward);
+        buildDirectedQuad(geo, roofPeak, vForward, dirFromPeakRight);
 
 
         // roof:
