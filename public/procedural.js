@@ -20,9 +20,6 @@ var addQuad = function (geo, offset) {
     geo.faces.push( new THREE.Face3( baseIndex, baseIndex+2, baseIndex+3 ) );
 }
 
-
-// segmentCount x segmentCount
-
 var addQuadForGrid = function(geo, pos, buildTriangles, vertsPerRow) {
     geo.vertices.push( pos );
 
@@ -89,7 +86,6 @@ renderer.setSize( WIDTH, HEIGHT );
 document.body.appendChild( renderer.domElement );
 
 var geometry = createGeometry();
-//var material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
 var material = new THREE.MeshNormalMaterial( );
 var mesh = new THREE.Mesh( geometry, material );
 scene.add( mesh );
@@ -102,12 +98,16 @@ var halfWayX = (m_SegmentCount / 2) * m_Width;
 var halfWayY = (m_SegmentCount / 2) * m_Length;
 
 camera.position.set(halfWayX, -halfWayY, 5);
- camera.lookAt(new THREE.Vector3(halfWayX, halfWayY, 0));
-// camera.up.set(new THREE.Vector3(0, 1, 0));
+var objCenter = new THREE.Vector3(halfWayX, halfWayY, 0)
+var controls = new THREE.OrbitControls( camera, renderer.domElement, {
+    target: objCenter
+});
+
 
 var render = function () {
     requestAnimationFrame( render );
     renderer.render(scene, camera);
+    controls.update();
 };
 
 render();
