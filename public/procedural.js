@@ -36,6 +36,46 @@ var addQuadForGrid = function(geo, pos, buildTriangles, vertsPerRow) {
     }
 }
 
+var buildDirectedQuad = function(geo, offset, widthDir, lengthDir) {
+    //var normal = new Vector3();
+    //normal.cross(lengthDir, widthDir).normalize();
+
+    var v0 = offset.clone();
+    var v1 = offset.clone().add(widthDir);
+    var v2 = offset.clone().add(lengthDir);
+    var v3 = offset.clone().add(lengthDir).add(widthDir);
+
+    geo.vertices.push(v0);
+    geo.vertices.push(v1);
+    geo.vertices.push(v2);
+    geo.vertices.push(v3);
+
+    var baseIndex = geo.vertices.length - 4;
+    geo.faces.push(new THREE.Face3(baseIndex, baseIndex + 1, baseIndex + 3));
+    geo.faces.push(new THREE.Face3(baseIndex, baseIndex + 3, baseIndex + 2));
+}
+
+var createCube = function(geo){
+    var upDir = new THREE.Vector3(0, 0, 1);
+    var rightDir = new THREE.Vector3(1, 0, 0);
+    var forwardDir = new THREE.Vector3(0, 1, 0);
+
+    var nearCorner = new THREE.Vector3();
+    var farCorner = new THREE.Vector3().addVectors(upDir, rightDir).add(forwardDir);
+
+    buildDirectedQuad(geo, nearCorner, forwardDir, rightDir);
+    buildDirectedQuad(geo, nearCorner, rightDir, upDir);
+    buildDirectedQuad(geo, nearCorner, upDir, forwardDir);
+
+    rightDir.multiplyScalar(-1);
+    forwardDir.multiplyScalar(-1);
+    upDir.multiplyScalar(-1);
+
+    buildDirectedQuad(geo, farCorner, rightDir, forwardDir);
+    buildDirectedQuad(geo, farCorner, upDir, rightDir);
+    buildDirectedQuad(geo, farCorner, forwardDir, upDir);
+}
+
 var createConnectedGrid = function(geo){
     var i, j, x, y;
 
@@ -71,7 +111,8 @@ var createGeometry = function() {
     var geometry = new THREE.Geometry();
 
     // createDisconnectedGrid(geometry);
-    createConnectedGrid(geometry);
+    //createConnectedGrid(geometry);
+    createCube(geometry);
     geometry.computeBoundingSphere();
     geometry.computeFaceNormals();
     geometry.computeVertexNormals();
@@ -87,6 +128,7 @@ document.body.appendChild( renderer.domElement );
 
 var geometry = createGeometry();
 var material = new THREE.MeshNormalMaterial( );
+// material.side = THREE.DoubleSide;
 var mesh = new THREE.Mesh( geometry, material );
 scene.add( mesh );
 // soft white light
