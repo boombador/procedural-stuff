@@ -1,10 +1,10 @@
 var WIDTH = 400,
     HEIGHT = 400;
 
-var m_Width = 1.0;
-var m_Length = 1.0;
-var m_Height = 3.0;
-var m_SegmentCount = 10;
+var m_Width = 3.0;
+var m_Length = 3.0;
+var m_Height = 2.0;
+var m_SegmentCount = 20;
 
 var m_RoofHeight = 0.5;
 var m_RoofOverhangSide = 0.2;
@@ -50,8 +50,8 @@ var addQuadForGrid = function(geo, pos, buildTriangles, vertsPerRow) {
         var index2 = baseIndex - vertsPerRow;
         var index3 = baseIndex - vertsPerRow - 1;
 
-        geo.faces.push( new THREE.Face3(index0, index1, index2));
-        geo.faces.push( new THREE.Face3(index2, index1, index3));
+        geo.faces.push( new THREE.Face3(index0, index2, index1));
+        geo.faces.push( new THREE.Face3(index2, index3, index1));
     }
 }
 
@@ -209,21 +209,74 @@ var buildPost = function(geo, position, rotation) {
     buildDirectedQuad(geo, farCorner, forwardDir, upDir);
 };
 
+// array storing height samples of x-z plane
+// row major encoding
+var terrain = (function(){
+    var that = {};
+    that.samples = [];
+
+    var init = function(xSections, zSections) {
+        this.xCount = xSections;
+        this.zCount = zSections;
+    };
+
+    var getSample = function(x, z) {
+        var index = this.xCount * z + x
+        return that.samples[index]
+    }
+
+    var interpolate = function(xCoord, zCoord) {
+        var normX = xCoord / m_Width;
+        var normZ = zCoord / m_Length;
+
+        var minX = Math.floor(normX);
+        var maxX = Math.ceil(normX);
+        var minZ = Math.floor(normZ);
+        var maxZ = Math.ceil(normZ);
+
+        var height0 = this.getSample(minX, minZ);
+        var height1 = this.getSample(maxX, minZ);
+        var height2 = this.getSample(minX, maxZ);
+        var height3 = this.getSample(maxX, maxZ);
+
+        var lowZ = (normX - minX) * (height1 - height0) + height0;
+        var highZ = (normX - minX) * (height3 - height2) + height2;
+        var estimate = (normZ - minZ) * (highZ - lowZ) + lowZ;
+        return estimate;
+    };
+
+    that.init = init;
+    that.interpolate = interpolate;
+    that.getSample = getSample;
+    return that;
+})();
+
 var createConnectedGrid = function(geo){
     var i, j, x, y;
 
+    terrain.init(m_SegmentCount, m_SegmentCount);
+
     for (i = 0; i <= m_SegmentCount; i++) {
-        y = m_Length * i;
+        for (j = 0; j <= m_SegmentCount; j++) {
+            var randomHeight = Math.random(m_Height);
+            terrain.samples.push(randomHeight);
+        }
+    }
+
+    for (i = 0; i <= m_SegmentCount; i++) {
+        z = m_Length * i;
 
         for (j = 0; j <= m_SegmentCount; j++) {
             x = m_Width * j;
 
-            var offset = new THREE.Vector3(x, y, Math.random(m_Height));
+            var storedHeight = terrain.getSample(j, i);
+            // var estimate = terrain.interpolate( 1, 1 );
+            var offset = new THREE.Vector3(x, storedHeight, z);
             var buildTriangles = i > 0 && j > 0;
             addQuadForGrid(geo, offset, buildTriangles, m_SegmentCount + 1);
         }
     }
-}
+};
 
 var createDisconnectedGrid = function(geo) {
     var i, j, x, y;
@@ -284,23 +337,24 @@ var createFence = function(geo) {
         var euler = new THREE.Euler( xAngle, 0, zAngle, 'XYZ' );
         rotation.setFromEuler(euler);
 
+        // height offset
+        // offset.y += Math.sin(offset.x) * 0.5;
+
         buildPost(geo, offset, rotation);
 
         // offset now used for cross piece
         offset.addScaledVector(globalForward, m_PostWidth * 0.5);
-        console.log(offset);
 
         var randomYStart = m_CrossPieceY + Math.random() * m_CrossPieceYVariation;
         var randomYEnd = m_CrossPieceY + Math.random() * m_CrossPieceYVariation;
 
-        var crossYOffsetStart = globalUp.clone().applyQuaternion(prevRotation).multiplyScalar(randomYStart); // , randomYStart).add(prevCrossPosition);
-        var crossYOffsetEnd = globalUp.clone().applyQuaternion(rotation).multiplyScalar(randomYEnd); // randomYEnd).add(offset);
+        var crossYOffsetStart = globalUp.clone().applyQuaternion(prevRotation).multiplyScalar(randomYStart);
+        var crossYOffsetEnd = globalUp.clone().applyQuaternion(rotation).multiplyScalar(randomYEnd);
         crossYOffsetStart.add(prevCrossPosition);
         crossYOffsetEnd.add(offset);
 
         prevCrossPosition.copy(offset);
         prevRotation.copy(rotation);
-        offset.addScaledVector(globalUp, m_CrossPieceY);
 
         if (i != 0) {
             buildCrossPiece(geo, crossYOffsetStart, crossYOffsetEnd);
@@ -312,9 +366,9 @@ var createGeometry = function() {
     var geometry = new THREE.Geometry();
 
     //createDisconnectedGrid(geometry);
-    //createConnectedGrid(geometry);
     //createHouse(geometry, upDir, rightDir, forwardDir);
 
+    createConnectedGrid(geometry);
     createFence(geometry);
 
     geometry.computeBoundingSphere();
@@ -339,11 +393,6 @@ scene.add( mesh );
 
 var axisHelper = new THREE.AxisHelper( 5 );
 scene.add( axisHelper );
-
-//var halfWayX = (m_SegmentCount / 2) * m_Width;
-//var halfWayY = (m_SegmentCount / 2) * m_Length;
-//camera.position.set(halfWayX, -halfWayY, 5);
-//var objCenter = new THREE.Vector3(halfWayX, halfWayY, 0)
 
 camera.position.set(3, 4, 4);
 var objCenter = new THREE.Vector3(0, 0, 0)
