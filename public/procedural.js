@@ -433,7 +433,7 @@ var createGeometry = function() {
         new THREE.Vector3( 20, 0, 20 )
     ]);
 
-    geometry.computeBoundingSphere();
+    geometry.computeBoundingBox();
     geometry.computeFaceNormals();
     geometry.computeVertexNormals();
     return geometry;
@@ -451,13 +451,16 @@ var material = new THREE.MeshNormalMaterial( );
 var mesh = new THREE.Mesh( geometry, material );
 scene.add( mesh );
 
+var geoCenter = new THREE.Vector3();
+geoCenter.addVectors(geometry.boundingBox.min, geometry.boundingBox.max).multiplyScalar(0.5);
+
 var axisHelper = new THREE.AxisHelper( 5 );
 scene.add( axisHelper );
 
 camera.position.set(3, 4, 4);
-var objCenter = new THREE.Vector3(0, 0, 0)
+// var objCenter = new THREE.Vector3(0, 0, 0)
 var controls = new THREE.OrbitControls( camera, renderer.domElement, {
-    target: objCenter
+    target: geoCenter
 });
 
 
