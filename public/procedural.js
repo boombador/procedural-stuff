@@ -270,7 +270,6 @@ var createConnectedGrid = function(geo){
             x = m_Width * j;
 
             var storedHeight = terrain.getSample(j, i);
-            // var estimate = terrain.interpolate( 1, 1 );
             var offset = new THREE.Vector3(x, storedHeight, z);
             var buildTriangles = i > 0 && j > 0;
             addQuadForGrid(geo, offset, buildTriangles, m_SegmentCount + 1);
@@ -338,7 +337,7 @@ var createFence = function(geo) {
         rotation.setFromEuler(euler);
 
         // height offset
-        // offset.y += Math.sin(offset.x) * 0.5;
+        offset.y += terrain.interpolate(offset.x, offset.z)
 
         buildPost(geo, offset, rotation);
 
