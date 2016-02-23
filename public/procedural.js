@@ -19,6 +19,7 @@ var m_CrossPieceWidth = 0.1;
 var m_CrossPieceY = 0.4;
 var m_PostHeightVariation = 0.3;
 var m_CrossPieceYVariation = 0.2;
+var m_PostTiltAngle = 0.3;
 
 var globalRight = new THREE.Vector3(1, 0, 0);
 var globalUp = new THREE.Vector3(0, 1, 0);
@@ -176,12 +177,17 @@ var createHouse = (function(){
     };
 })();
 
-var buildPost = function(geo, position) {
+var buildPost = function(geo, position, rotation) {
 
     var postHeight = m_PostHeight + Math.random()*m_PostHeightVariation;
-    var upDir = new THREE.Vector3().addScaledVector(globalUp, postHeight);
-    var rightDir = new THREE.Vector3().addScaledVector(globalRight, m_PostWidth);
-    var forwardDir = new THREE.Vector3().addScaledVector(globalForward, m_PostWidth);
+
+    var upDir = globalUp.clone().applyQuaternion(rotation);
+    var rightDir = globalRight.clone().applyQuaternion(rotation);
+    var forwardDir = globalForward.clone().applyQuaternion(rotation);
+
+    upDir.multiplyScalar( postHeight);
+    rightDir.multiplyScalar(m_PostWidth);
+    forwardDir.multiplyScalar(m_PostWidth);
 
     var farCorner = new THREE.Vector3().addVectors(upDir, rightDir).add(forwardDir).add(position);
     var nearCorner = new THREE.Vector3().copy(position);
@@ -264,24 +270,36 @@ var buildCrossPiece = function(geo, start, end) {
     buildDirectedQuad(geo, farCorner, forwardDir, upDir);
 }
 
-
 var prevCrossPosition = new THREE.Vector3(0, 0, 0);
+var prevRotation = new THREE.Quaternion();;
 
 var createFence = function(geo) {
     for (var i = 0; i <= m_SectionCount; i++) {
         var offset = new THREE.Vector3().addScaledVector( globalRight, m_DistBetweenPosts * i);
-        buildPost(geo, offset);
+
+        var xAngle = (Math.random() * 2 - 1) * m_PostTiltAngle;
+        var zAngle = (Math.random() * 2 - 1) * m_PostTiltAngle;
+
+        var rotation = new THREE.Quaternion();
+        var euler = new THREE.Euler( xAngle, 0, zAngle, 'XYZ' );
+        rotation.setFromEuler(euler);
+
+        buildPost(geo, offset, rotation);
 
         // offset now used for cross piece
         offset.addScaledVector(globalForward, m_PostWidth * 0.5);
+        console.log(offset);
 
         var randomYStart = m_CrossPieceY + Math.random() * m_CrossPieceYVariation;
         var randomYEnd = m_CrossPieceY + Math.random() * m_CrossPieceYVariation;
 
-        var crossYOffsetStart = new THREE.Vector3().addScaledVector(globalUp, randomYStart).add(prevCrossPosition);
-        var crossYOffsetEnd = new THREE.Vector3().addScaledVector(globalUp, randomYEnd).add(offset);
+        var crossYOffsetStart = globalUp.clone().applyQuaternion(prevRotation).multiplyScalar(randomYStart); // , randomYStart).add(prevCrossPosition);
+        var crossYOffsetEnd = globalUp.clone().applyQuaternion(rotation).multiplyScalar(randomYEnd); // randomYEnd).add(offset);
+        crossYOffsetStart.add(prevCrossPosition);
+        crossYOffsetEnd.add(offset);
 
         prevCrossPosition.copy(offset);
+        prevRotation.copy(rotation);
         offset.addScaledVector(globalUp, m_CrossPieceY);
 
         if (i != 0) {
