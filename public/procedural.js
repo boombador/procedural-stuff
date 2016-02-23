@@ -13,7 +13,7 @@ var m_RoofOverhangFront = 0.1;
 var m_PostHeight = 0.8;
 var m_PostWidth = 0.2;
 var m_SectionCount = 10;
-var m_DistBetweenPosts = 1;
+var m_IdealPostSeparation = 1; // ideal distance, not necessarily used
 var m_CrossPieceHeight = 0.2;
 var m_CrossPieceWidth = 0.1;
 var m_CrossPieceY = 0.4;
@@ -113,19 +113,26 @@ var createHouse = (function(){
     var vRight = new THREE.Vector3(); 
     var vForward = new THREE.Vector3(); 
     var nearCorner = new THREE.Vector3();
-    var farCorner = new THREE.Vector3(); // .addVectors(v1, v2).add(v3);
-    var pivotOffset = new THREE.Vector3(); // (rightDir + forwardDir) * 0.5f;
+    var farCorner = new THREE.Vector3();
+    var pivotOffset = new THREE.Vector3();
     var roofPeak = new THREE.Vector3();
     var wallTopLeft = new THREE.Vector3();
     var wallTopRight = new THREE.Vector3();
 
-    return function(geo, upDir, rightDir, forwardDir) {
-        vUp.copy( upDir );
-        vRight.copy( rightDir );
-        vForward.copy( forwardDir );
+    return function(geo, opts) {
+        opts = opts || {};
 
-        nearCorner.set(0, 0, 0);
-        farCorner.addVectors(vUp, vRight).add(vForward);
+        opts.width = opts.width || 2.0;
+        opts.length = opts.length || 2.0;
+        opts.height = opts.height || 2.0;
+        
+        vUp.copy( globalUp ).multiplyScalar(opts.height);
+        vRight.copy( globalRight ).multiplyScalar(opts.width);
+        vForward.copy( globalForward ).multiplyScalar(opts.length);
+
+        opts.start = opts.start || new THREE.Vector3(0, 0, 0);
+        nearCorner.copy(opts.start);
+        farCorner.addVectors(vUp, vRight).add(vForward).add(opts.start);
 
         // set object origin to base of house
         pivotOffset.addVectors(vRight, vForward).multiplyScalar(0.5);
@@ -145,9 +152,9 @@ var createHouse = (function(){
         vUp.multiplyScalar(-1);
 
         // roof
-        roofPeak.set(0, 0, 0).addScaledVector(globalUp, vUp.length() + m_RoofHeight).addScaledVector(vRight, 0.5).sub(pivotOffset);
-        wallTopLeft.subVectors(vUp, pivotOffset);
-        wallTopRight.addVectors(vUp, vRight).sub(pivotOffset);
+        roofPeak.set(0, 0, 0).addScaledVector(globalUp, vUp.length() + m_RoofHeight).addScaledVector(vRight, 0.5).sub(pivotOffset).add(opts.start);
+        wallTopLeft.subVectors(vUp, pivotOffset).add(opts.start);
+        wallTopRight.addVectors(vUp, vRight).sub(pivotOffset).add(opts.start);
 
         addTri(geo, wallTopLeft.clone(), roofPeak.clone(), wallTopRight.clone());
         roofPeak.add(vForward);
@@ -325,9 +332,20 @@ var buildCrossPiece = function(geo, start, end) {
 var prevCrossPosition = new THREE.Vector3(0, 0, 0);
 var prevRotation = new THREE.Quaternion();;
 
-var createFence = function(geo) {
-    for (var i = 0; i <= m_SectionCount; i++) {
-        var offset = new THREE.Vector3().addScaledVector( globalRight, m_DistBetweenPosts * i);
+var createFence = function(geo, opts) {
+    opts = opts || {};
+    opts.length = opts.length || 30;
+
+    var sectionCount = Math.floor( opts.length / m_IdealPostSeparation );
+    var actualDistBetweenPosts = opts.length / sectionCount;
+
+    opts.start = opts.start || new THREE.Vector3();
+    opts.direction = opts.direction || globalRight.clone(); // assumed to be normalized
+
+    var offset = new THREE.Vector3();
+
+    for (var i = 0; i <= sectionCount; i++) {
+        offset.copy(opts.direction).multiplyScalar(actualDistBetweenPosts * i).add(opts.start);
 
         var xAngle = (Math.random() * 2 - 1) * m_PostTiltAngle;
         var zAngle = (Math.random() * 2 - 1) * m_PostTiltAngle;
@@ -361,14 +379,59 @@ var createFence = function(geo) {
     }
 };
 
+/* sequentially stored x,z coordinates
+ * coords = [
+ *      20, 20,
+ *      40, 30,
+ *      40, 40
+ * ]
+ */
+var createFencePath = function(geo, coords) {
+    if (!coords) {
+        return;
+    }
+
+    var delta = new THREE.Vector3();
+    for (var i = 1; i < coords.length; i++) {
+        delta.subVectors(coords[i], coords[i-1]);
+        var length = delta.length();
+        delta.normalize();
+
+        createFence(geo, {
+            start: coords[i-1],
+            direction: delta,
+            length: length
+        });
+    }
+
+};
+
 var createGeometry = function() {
     var geometry = new THREE.Geometry();
 
-    //createDisconnectedGrid(geometry);
-    //createHouse(geometry, upDir, rightDir, forwardDir);
+    var rotation = new THREE.Quaternion();
+    rotation.setFromUnitVectors(globalRight, globalForward);
 
+    createHouse(geometry, {
+        start: new THREE.Vector3(10, 0, 10)
+    });
+    createHouse(geometry, {
+        start: new THREE.Vector3(30, 0, 30),
+        width: 8,
+        length: 10,
+        height: 5
+    });
+    createHouse(geometry, {
+        start: new THREE.Vector3(50, 0, 50)
+    });
     createConnectedGrid(geometry);
-    createFence(geometry);
+    createFencePath(geometry, [
+        new THREE.Vector3( 20, 0, 20 ),
+        new THREE.Vector3( 40, 0, 20 ),
+        new THREE.Vector3( 40, 0, 40 ),
+        new THREE.Vector3( 20, 0, 40 ),
+        new THREE.Vector3( 20, 0, 20 )
+    ]);
 
     geometry.computeBoundingSphere();
     geometry.computeFaceNormals();
@@ -385,10 +448,8 @@ document.body.appendChild( renderer.domElement );
 
 var geometry = createGeometry();
 var material = new THREE.MeshNormalMaterial( );
-// material.side = THREE.DoubleSide;
 var mesh = new THREE.Mesh( geometry, material );
 scene.add( mesh );
-// soft white light
 
 var axisHelper = new THREE.AxisHelper( 5 );
 scene.add( axisHelper );
