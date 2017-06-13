@@ -7,10 +7,8 @@
   "author": "Ian McLaughlin <ian.p.mclaughlin@gmail.com>",
   "license": "MIT",
   "scripts": {
-    "build": "webpack",
-    "build:watch": "webpack --watch",
-    "client": "webpack-dev-server --port 3000",
-    "server": "http-server"
+    "client": "webpack-dev-server --port 3000 --host 0.0.0.0",
+    "start": "nf start"
   },
   "dependencies": {
     "ace-css": "1.1",
@@ -19,6 +17,7 @@
     "express": "^4.15.3",
     "file-loader": "^0.11.2",
     "font-awesome": "4",
+    "foreman": "^2.0.0",
     "http-server": "^0.10.0",
     "style-loader": "^0.18.2",
     "three": "^0.85.2",

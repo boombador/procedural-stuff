@@ -2,13 +2,11 @@ var path = require("path");
 var HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
-  entry: {
-    bundle: [ './src/index.js' ],
-  },
+  entry: [ './src/index.js' ],
 
   output: {
     path: path.resolve(__dirname, 'dist'),
-    filename: '[name].js',
+    filename: 'bundle.js',
   },
 
   module: {
@@ -46,6 +44,7 @@ module.exports = {
   devServer: {
     inline: true,
     stats: { colors: true },
+    disableHostCheck: true
   },
 
   plugins: [

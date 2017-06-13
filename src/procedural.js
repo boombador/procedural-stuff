@@ -275,13 +275,13 @@ var createConnectedGrid = function(geo){
     }
 
     for (i = 0; i <= m_SegmentCount; i++) {
-        z = m_Length * i;
+        y = m_Length * i;
 
         for (j = 0; j <= m_SegmentCount; j++) {
             x = m_Width * j;
 
             var storedHeight = terrain.getSample(j, i);
-            var offset = new THREE.Vector3(x, storedHeight, z);
+            var offset = new THREE.Vector3(x, storedHeight, y);
             var buildTriangles = i > 0 && j > 0;
             addQuadForGrid(geo, offset, buildTriangles, m_SegmentCount + 1);
         }
@@ -428,7 +428,7 @@ var createGeometry = function() {
     createHouse(geometry, {
         start: new THREE.Vector3(50, 0, 50)
     });
-    createConnectedGrid(geometry);
+    //createConnectedGrid(geometry);
     createFencePath(geometry, [
         new THREE.Vector3( 20, 0, 20 ),
         new THREE.Vector3( 40, 0, 20 ),
