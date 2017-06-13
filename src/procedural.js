@@ -1,3 +1,7 @@
+var THREE = require('three');
+
+var OrbitControls = require('three-orbit-controls')(THREE)
+
 var WIDTH = 400,
     HEIGHT = 400;
 
@@ -459,7 +463,7 @@ scene.add( axisHelper );
 
 camera.position.set(3, 4, 4);
 // var objCenter = new THREE.Vector3(0, 0, 0)
-var controls = new THREE.OrbitControls( camera, renderer.domElement, {
+var controls = new OrbitControls( camera, renderer.domElement, {
     target: geoCenter
 });
 
@@ -470,5 +474,5 @@ var render = function () {
     controls.update();
 };
 
-render();
+export default render;
 
