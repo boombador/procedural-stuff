@@ -7,21 +7,33 @@ require('font-awesome/css/font-awesome.css');
 
 const Elm = require('../elm-src/Main.elm');
 
-const mountNode = document.createElement('div');
-document.body.appendChild(mountNode);
-var app = Elm.Main.embed(mountNode);
+const create = nodeType => {
+  const elem = document.createElement(nodeType)
+  document.body.appendChild(elem);
+  return elem;
+}
 
-app.ports.check.subscribe(function(word) {
-  var suggestions = logWord(word);
-  app.ports.suggestions.send(suggestions);
-});
+const elmMountNode = create('div');
+const requestButton = create('button');
+requestButton.innerHTML = 'Make a request';
 
-const logWord = word => {
-	console.log(word);
-	return [];
+
+const app = Elm.Main.embed(elmMountNode);
+
+export const meshResponseListener = cb => {
+  app.ports.emitMesh.subscribe(cb);
 };
 
-render();
+export const requestMesh = meshType => {
+  console.log(`making a mesh request: ${meshType}`);
+  app.ports.meshRequests.send(meshType);
+};
 
-// https://www.elm-tutorial.org/en/04-starting/04-webpack-2.html
-// https://guide.elm-lang.org/interop/javascript.html
+requestButton.addEventListener('click', () => requestMesh('thing'));
+
+meshResponseListener(msg => {
+  console.log(msg)
+});
+
+// invoke this function to start the event loop for the old three.js implementation
+render();

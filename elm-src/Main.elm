@@ -1,8 +1,13 @@
 port module Main exposing (..)
 
 import Html exposing (..)
-import Html.Events exposing (..)
-import String
+import Debug exposing (log)
+import Task
+
+
+--import Html.Events exposing (..)
+--import String
+--import Json.Encode
 
 
 main : Program Never Model Msg
@@ -11,61 +16,103 @@ main =
         { init = init
         , view = view
         , update = update
-        , subscriptions = (always Sub.none)
+        , subscriptions = (always Sub.none) -- ??
         }
+
 
 
 -- MODEL
 
-type alias Model =
-  { word : String
-  , suggestions : List String
-  }
 
-init : (Model, Cmd Msg)
+type alias Mesh =
+    { vertices : List Float
+    , faces : List Int
+    }
+
+
+type alias Model =
+    { meshRequest : String
+    , mesh : Maybe Mesh
+    }
+
+
+init : ( Model, Cmd Msg )
 init =
-  (Model "" [], check "testspelling")
+    ( Model "" Nothing, Cmd.none )
+
 
 
 -- UPDATE
 
+
 type Msg
-  = Change String
-  | Check
-  | Suggest (List String)
+    = EmitMesh
+    | RequestMesh String
+    | MeshGenerated Mesh
 
 
-port check : String -> Cmd msg
+port emitMesh : String -> Cmd msg
 
-update : Msg -> Model -> (Model, Cmd Msg)
+
+meshToString : Maybe Mesh -> String
+meshToString maybeMesh =
+    case maybeMesh of
+        Nothing ->
+            ""
+
+        Just { vertices, faces } ->
+            let
+                toCsv values =
+                    values
+                        |> List.map toString
+                        |> String.join ","
+            in
+                String.concat [ "{\"vertices\": [", toCsv vertices, "], \"faces\": [", toCsv faces, "]}" ]
+
+
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-  case msg of
-    Change newWord ->
-      ( Model newWord [], Cmd.none )
+    case msg of
+        EmitMesh ->
+            ( model, emitMesh (meshToString model.mesh) )
 
-    Check ->
-      ( model, check model.word )
+        RequestMesh meshType ->
+            let
+                _ =
+                    Debug.log "meshType" meshType
+                cmds =
+                    Task.perform MeshGenerated (generateMesh meshType)
+            in
+                ( { model | meshRequest = meshType }, cmds )
 
-    Suggest newSuggestions ->
-      ( Model model.word newSuggestions, Cmd.none )
+        MeshGenerated mesh ->
+            ( { model | mesh = Just mesh }, Cmd.none )
+
+
+generateMesh : String -> Task.Task x Mesh
+generateMesh meshType =
+    Task.succeed
+        { vertices = []
+        , faces = []
+        }
+
 
 
 -- SUBSCRIPTIONS
 
-port suggestions : (List String -> msg) -> Sub msg
+
+port meshRequests : (String -> msg) -> Sub msg
+
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-  suggestions Suggest
+    meshRequests RequestMesh
+
 
 
 -- VIEW
 
+
 view : Model -> Html Msg
 view model =
-  div []
-    [ input [ onInput Change ] []
-    , button [ onClick Check ] [ text "Check" ]
-    , div [] [ text (String.join ", " model.suggestions) ]
-    ]
-
+    div [] [ text "hello" ]
