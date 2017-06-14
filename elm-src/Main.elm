@@ -1,118 +1,99 @@
-port module Main exposing (..)
+module Main exposing (..)
 
-import Html exposing (..)
-import Debug exposing (log)
-import Task
+{-
+   Rotating triangle, that is a "hello world" of the WebGL
+-}
+
+import AnimationFrame
+import Html exposing (Html)
+import Html.Attributes exposing (width, height, style)
+import Math.Matrix4 as Mat4 exposing (Mat4)
+import Math.Vector3 as Vec3 exposing (vec3, Vec3)
+import Time exposing (Time)
+import WebGL exposing (Mesh, Shader)
 
 
---import Html.Events exposing (..)
---import String
---import Json.Encode
 
-
-main : Program Never Model Msg
+main : Program Never Time Time
 main =
-    program
-        { init = init
+    Html.program
+        { init = ( 0, Cmd.none )
         , view = view
-        , update = update
-        , subscriptions = (always Sub.none) -- ??
+        , subscriptions = (\model -> AnimationFrame.diffs Basics.identity)
+        , update = (\elapsed currentTime -> ( elapsed + currentTime, Cmd.none ))
         }
 
 
+view : Float -> Html msg
+view t =
+    WebGL.toHtml
+        [ width 400
+        , height 400
+        , style [ ( "display", "block" ) ]
+        ]
+        [ WebGL.entity
+            vertexShader
+            fragmentShader
+            mesh
+            { perspective = perspective (t / 1000) }
+        ]
 
--- MODEL
+
+perspective : Float -> Mat4
+perspective t =
+    Mat4.mul
+        (Mat4.makePerspective 45 1 0.01 100)
+        (Mat4.makeLookAt (vec3 (4 * cos t) 0 (4 * sin t)) (vec3 0 0 0) (vec3 0 1 0))
 
 
-type alias Mesh =
-    { vertices : List Float
-    , faces : List Int
+
+-- Mesh
+
+
+type alias Vertex =
+    { position : Vec3
+    , color : Vec3
     }
 
 
-type alias Model =
-    { meshRequest : String
-    , mesh : Maybe Mesh
-    }
+mesh : Mesh Vertex
+mesh =
+    WebGL.triangles
+        [ ( Vertex (vec3 0 0 0) (vec3 1 0 0)
+          , Vertex (vec3 1 1 0) (vec3 0 1 0)
+          , Vertex (vec3 1 -1 0) (vec3 0 0 1)
+          )
+        ]
 
 
-init : ( Model, Cmd Msg )
-init =
-    ( Model "" Nothing, Cmd.none )
+
+-- Shaders
 
 
-
--- UPDATE
-
-
-type Msg
-    = EmitMesh
-    | RequestMesh String
-    | MeshGenerated Mesh
+type alias Uniforms =
+    { perspective : Mat4 }
 
 
-port emitMesh : String -> Cmd msg
-
-
-meshToString : Maybe Mesh -> String
-meshToString maybeMesh =
-    case maybeMesh of
-        Nothing ->
-            ""
-
-        Just { vertices, faces } ->
-            let
-                toCsv values =
-                    values
-                        |> List.map toString
-                        |> String.join ","
-            in
-                String.concat [ "{\"vertices\": [", toCsv vertices, "], \"faces\": [", toCsv faces, "]}" ]
-
-
-update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
-    case msg of
-        EmitMesh ->
-            ( model, emitMesh (meshToString model.mesh) )
-
-        RequestMesh meshType ->
-            let
-                _ =
-                    Debug.log "meshType" meshType
-                cmds =
-                    Task.perform MeshGenerated (generateMesh meshType)
-            in
-                ( { model | meshRequest = meshType }, cmds )
-
-        MeshGenerated mesh ->
-            ( { model | mesh = Just mesh }, Cmd.none )
-
-
-generateMesh : String -> Task.Task x Mesh
-generateMesh meshType =
-    Task.succeed
-        { vertices = []
-        , faces = []
+vertexShader : Shader Vertex Uniforms { vcolor : Vec3 }
+vertexShader =
+    [glsl|
+        attribute vec3 position;
+        attribute vec3 color;
+        uniform mat4 perspective;
+        varying vec3 vcolor;
+        void main () {
+            gl_Position = perspective * vec4(position, 1.0);
+            vcolor = color;
         }
+    |]
 
 
-
--- SUBSCRIPTIONS
-
-
-port meshRequests : (String -> msg) -> Sub msg
-
-
-subscriptions : Model -> Sub Msg
-subscriptions model =
-    meshRequests RequestMesh
-
-
-
--- VIEW
-
-
-view : Model -> Html Msg
-view model =
-    div [] [ text "hello" ]
+fragmentShader : Shader {} Uniforms { vcolor : Vec3 }
+fragmentShader =
+    [glsl|
+        precision mediump float;
+        varying vec3 vcolor;
+        void main () {
+            gl_FragColor = vec4(vcolor, 1.0);
+        }
+    |]

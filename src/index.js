@@ -21,12 +21,12 @@ requestButton.innerHTML = 'Make a request';
 const app = Elm.Main.embed(elmMountNode);
 
 export const meshResponseListener = cb => {
-  app.ports.emitMesh.subscribe(cb);
+  //app.ports.emitMesh.subscribe(cb);
 };
 
 export const requestMesh = meshType => {
   console.log(`making a mesh request: ${meshType}`);
-  app.ports.meshRequests.send(meshType);
+  //app.ports.meshRequests.send(meshType);
 };
 
 requestButton.addEventListener('click', () => requestMesh('thing'));
