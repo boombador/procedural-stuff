@@ -77,7 +77,7 @@ type alias Vertex =
 
 mesh : Mesh Vertex
 mesh =
-    WebGL.triangles house
+    WebGL.triangles (house 1 1 1 1)
 
 
 samplePrism : List ( Vertex, Vertex, Vertex )
@@ -170,36 +170,38 @@ houseOpts width height length roofHeight =
         }
 
 
-house : List ( Vertex, Vertex, Vertex )
-house =
+house : Float -> Float -> Float -> Float -> List ( Vertex, Vertex, Vertex )
+house h w l r =
     let
         { width, height, length, roofHeight, start, hw, hh, hl, center, roofBase, roofTop } =
-            houseOpts 1 1 1 1
-
-        roof =
-            let
-                ( roofA, roofB, cornerA, cornerB ) =
-                    ( vec3 hw roofTop 0
-                    , vec3 -hw roofTop 0
-                    , vec3 hw roofBase hl
-                    , vec3 hw roofBase -hl
-                    )
-
-                ( roofLine, downSlantA, downSlantB ) =
-                    ( Vec3.sub roofB roofA
-                    , Vec3.sub cornerA roofA
-                    , Vec3.sub cornerB roofA
-                    )
-            in
-                List.concat
-                    [ quad roofA roofLine downSlantA
-                    , quad roofA roofLine downSlantB
-                    ]
+            houseOpts h w l r
     in
         List.concat
             [ prism width height length (vec3 0 center 0)
             , roofSides hw hl roofBase roofTop
-            , roof
+            , roof hw hl roofTop roofBase
+            ]
+
+
+roof : Float -> Float -> Float -> Float -> List ( Vertex, Vertex, Vertex )
+roof hw hl roofTop roofBase =
+    let
+        ( roofA, roofB, cornerA, cornerB ) =
+            ( vec3 hw roofTop 0
+            , vec3 -hw roofTop 0
+            , vec3 hw roofBase hl
+            , vec3 hw roofBase -hl
+            )
+
+        ( roofLine, downSlantA, downSlantB ) =
+            ( Vec3.sub roofB roofA
+            , Vec3.sub cornerA roofA
+            , Vec3.sub cornerB roofA
+            )
+    in
+        List.concat
+            [ quad roofA roofLine downSlantA
+            , quad roofA roofLine downSlantB
             ]
 
 
