@@ -7,7 +7,7 @@ import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (vec3, Vec3)
 import Time exposing (Time)
 import WebGL exposing (Mesh, Shader)
-import Procedural exposing (house, Vertex)
+import Procedural exposing (sceneTriangles, house, Vertex)
 
 
 main : Program Never Time Time
@@ -40,10 +40,6 @@ target =
     vec3 0 0 0
 
 
-origin : Vec3
-origin =
-    vec3 0 0 0
-
 eyeHeight : Float
 eyeHeight = 
     1
@@ -62,7 +58,7 @@ perspective t =
 
 mesh : Mesh Vertex
 mesh =
-    WebGL.triangles (house 1 1 1 0.5 origin)
+    WebGL.triangles sceneTriangles
 
 
 

@@ -137,8 +137,8 @@ postsBetweenPoints ( a, b ) =
         ]
 
 
-fromPostPath : List Vec3 -> List ( Vertex, Vertex, Vertex )
-fromPostPath points =
+postsFromPath : List Vec3 -> List ( Vertex, Vertex, Vertex )
+postsFromPath points =
     let
         offsetPoints =
             toOffsetList points
@@ -248,6 +248,18 @@ houseOpts width height length roofHeight start =
         }
 
 
+origin : Vec3
+origin =
+    vec3 0 0 0
+
+
+sceneTriangles =
+    List.concat
+        [ house 1 1 1 0.5 origin
+        , terrain 10
+        ]
+
+
 house : Float -> Float -> Float -> Float -> Vec3 -> List ( Vertex, Vertex, Vertex )
 house h w l r start =
     let
@@ -258,13 +270,22 @@ house h w l r start =
             [ prism width height length (vec3 0 center 0)
             , roofSides hw hl roofBase roofTop
             , roof hw hl roofTop roofBase
-            , fromPostPath (postPathSquare w l)
+            , postsFromPath (squarePath w l)
             ]
 
 
-getPair : List Vec3 -> ( List Vec3, List Vec3 )
-getPair l =
-    ( l, toOffsetList l )
+terrain : Float -> List ( Vertex, Vertex, Vertex )
+terrain toEdge =
+    let
+        ( x, z ) =
+            ( Vec3.scale toEdge Vec3.i
+            , Vec3.scale toEdge Vec3.k
+            )
+
+        offset =
+            -(toEdge / 2)
+    in
+        quad (vec3 offset 0 offset) x z
 
 
 toOffsetList : List Vec3 -> List Vec3
@@ -305,8 +326,8 @@ postPathEdge w l =
     )
 
 
-postPathSquare : Float -> Float -> List Vec3
-postPathSquare w l =
+squarePath : Float -> Float -> List Vec3
+squarePath w l =
     [ (vec3 w 0 l)
     , (vec3 -w 0 l)
     , (vec3 -w 0 -l)
