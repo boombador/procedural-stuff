@@ -14,7 +14,18 @@ import WebGL exposing (Mesh, Shader)
 
 
 type alias HouseOpts =
-    { forward : Vec3, right : Vec3, start : Vec3, up : Vec3 }
+    { center : Float
+    , height : Float
+    , hh : Float
+    , hl : Float
+    , hw : Float
+    , length : Float
+    , roofBase : Float
+    , roofHeight : Float
+    , roofTop : Float
+    , start : Vec3
+    , width : Float
+    }
 
 
 main : Program Never Time Time
@@ -66,23 +77,36 @@ type alias Vertex =
 
 mesh : Mesh Vertex
 mesh =
-    WebGL.triangles (cube 1 (vec3 0 0 0))
+    WebGL.triangles house
+
+
+samplePrism : List ( Vertex, Vertex, Vertex )
+samplePrism =
+    prism 0.5 3 0.5 (vec3 0 0 0)
+
+
+cube : Float -> Vec3 -> List ( Vertex, Vertex, Vertex )
+cube s =
+    prism s s s
 
 
 
 {- axis aligned bounding box. for simplicity assumes double sided triangles -}
 
 
-cube : Float -> Vec3 -> List ( Vertex, Vertex, Vertex )
-cube s center =
+prism : Float -> Float -> Float -> Vec3 -> List ( Vertex, Vertex, Vertex )
+prism w h l center =
     let
-        ( x, y, z, negX, negY, negZ ) =
-            ( Vec3.i
-            , Vec3.j
-            , Vec3.k
-            , Vec3.negate Vec3.i
-            , Vec3.negate Vec3.j
-            , Vec3.negate Vec3.k
+        ( x, y, z ) =
+            ( Vec3.scale w Vec3.i
+            , Vec3.scale h Vec3.j
+            , Vec3.scale l Vec3.k
+            )
+
+        ( negX, negY, negZ ) =
+            ( Vec3.negate x
+            , Vec3.negate y
+            , Vec3.negate z
             )
 
         nearCorner =
@@ -117,85 +141,74 @@ quad corner x y =
             ]
 
 
-houseOpts : HouseOpts
-houseOpts =
+houseOpts : Float -> Float -> Float -> Float -> HouseOpts
+houseOpts width height length roofHeight =
     let
-        ( w, h, l ) =
-            ( 2, 2, 2 )
+        ( hw, hh, hl ) =
+            ( width / 2
+            , height / 2
+            , length / 2
+            )
+
+        ( center, roofBase, roofTop ) =
+            ( hh
+            , height
+            , height + roofHeight
+            )
     in
-        { right = Vec3.scale w Vec3.i
-        , up = Vec3.scale h Vec3.j
-        , forward = Vec3.scale l Vec3.k
+        { width = width
+        , height = height
+        , length = length
+        , roofHeight = 1
         , start = vec3 0 0 0
+        , hw = hw
+        , hh = hh
+        , hl = hl
+        , center = center
+        , roofBase = roofBase
+        , roofTop = roofTop
         }
 
 
 house : List ( Vertex, Vertex, Vertex )
 house =
     let
-        { right, up, forward, start } =
-            houseOpts
+        { width, height, length, roofHeight, start, hw, hh, hl, center, roofBase, roofTop } =
+            houseOpts 1 1 1 1
 
-        ( nearCorner, farCorner, pivot ) =
-            ( start
-            , List.foldl Vec3.add start [ right, up, forward ]
-            , Vec3.scale 0.5 (Vec3.add right forward)
-            )
+        roof =
+            let
+                ( roofA, roofB, cornerA, cornerB ) =
+                    ( vec3 hw roofTop 0
+                    , vec3 -hw roofTop 0
+                    , vec3 hw roofBase hl
+                    , vec3 hw roofBase -hl
+                    )
+
+                ( roofLine, downSlantA, downSlantB ) =
+                    ( Vec3.sub roofB roofA
+                    , Vec3.sub cornerA roofA
+                    , Vec3.sub cornerB roofA
+                    )
+            in
+                List.concat
+                    [ quad roofA roofLine downSlantA
+                    , quad roofA roofLine downSlantB
+                    ]
     in
-        []
+        List.concat
+            [ prism width height length (vec3 0 center 0)
+            , roofSides hw hl roofBase roofTop
+            , roof
+            ]
 
 
-
-{-
-       // set object origin to base of house
-       pivotOffset.addVectors(vRight, vForward).multiplyScalar(0.5);
-       farCorner.sub(pivotOffset);
-       nearCorner.sub(pivotOffset);
-
-       // build horizontal walls
-       buildDirectedQuad(geo, nearCorner, vRight, vUp);
-       buildDirectedQuad(geo, nearCorner, vUp, vForward);
-       vRight.multiplyScalar(-1);
-       vForward.multiplyScalar(-1);
-       vUp.multiplyScalar(-1);
-       buildDirectedQuad(geo, farCorner, vUp, vRight);
-       buildDirectedQuad(geo, farCorner, vForward, vUp);
-       vRight.multiplyScalar(-1);
-       vForward.multiplyScalar(-1);
-       vUp.multiplyScalar(-1);
-
-       // roof
-       roofPeak.set(0, 0, 0).addScaledVector(globalUp, vUp.length() + m_RoofHeight).addScaledVector(vRight, 0.5).sub(pivotOffset).add(opts.start);
-       wallTopLeft.subVectors(vUp, pivotOffset).add(opts.start);
-       wallTopRight.addVectors(vUp, vRight).sub(pivotOffset).add(opts.start);
-
-       addTri(geo, wallTopLeft.clone(), roofPeak.clone(), wallTopRight.clone());
-       roofPeak.add(vForward);
-       wallTopLeft.add(vForward);
-       wallTopRight.add(vForward);
-       addTri(geo, wallTopLeft.clone(), wallTopRight.clone(), roofPeak.clone());
-
-       roofPeak.sub(vForward);
-       wallTopLeft.sub(vForward);
-       wallTopRight.sub(vForward);
-
-       var dirFromPeakLeft = new THREE.Vector3().subVectors(wallTopLeft, roofPeak);
-       var dirFromPeakRight = new THREE.Vector3().subVectors(wallTopRight, roofPeak);
-
-       var normDirFromPeakLeft = dirFromPeakLeft.clone().normalize();
-       var normDirFromPeakRight = dirFromPeakRight.clone().normalize();
-       dirFromPeakLeft.addScaledVector(normDirFromPeakLeft, m_RoofOverhangSide);
-       dirFromPeakRight.addScaledVector(normDirFromPeakRight, m_RoofOverhangSide);
-
-       roofPeak.addScaledVector( globalForward, -m_RoofOverhangFront);
-       vForward.addScaledVector( globalForward, m_RoofOverhangFront * 2);
-
-       buildDirectedQuad(geo, roofPeak, vForward, dirFromPeakLeft);
-       buildDirectedQuad(geo, roofPeak, dirFromPeakRight, vForward);
-       buildDirectedQuad(geo, roofPeak, dirFromPeakLeft, vForward);
-       buildDirectedQuad(geo, roofPeak, vForward, dirFromPeakRight);
-   };-
--}
+roofSides : Float -> Float -> Float -> Float -> List ( Vertex, Vertex, Vertex )
+roofSides hw hl roofBase roofTop =
+    List.concat
+        [ tri (vec3 hw roofBase hl) (vec3 hw roofBase -hl) (vec3 hw roofTop 0)
+        , tri (vec3 -hw roofBase hl) (vec3 -hw roofBase -hl) (vec3 -hw roofTop 0)
+        ]
 
 
 tri : Vec3 -> Vec3 -> Vec3 -> List ( Vertex, Vertex, Vertex )
