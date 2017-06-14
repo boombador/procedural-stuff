@@ -110,7 +110,6 @@ segmentsFromLength minLength distance =
 {-| Calculate a list of values within (0,1) representing the fractional
 position of each split point when dividing the unit lenght into the requested
 number of segments
-
 -}
 sEntriesForCount : Int -> List Float
 sEntriesForCount count =
@@ -131,26 +130,32 @@ intermediatePoints targetSplit a b =
             |> List.map fromS
 
 
-fromPostPath : ( Vec3, Vec3 ) -> List ( Vertex, Vertex, Vertex )
-fromPostPath endpoints =
+postsBetweenPoints : ( Vec3, Vec3 ) -> List ( Vertex, Vertex, Vertex )
+postsBetweenPoints ( a, b ) =
+    List.concat
+        [ posts (intermediatePoints 0.5 a b)
+        ]
+
+
+fromPostPath : List Vec3 -> List ( Vertex, Vertex, Vertex )
+fromPostPath points =
     let
-        ( a, b ) =
-            endpoints
+        offsetPoints =
+            toOffsetList points
 
-        points =
-            [ a, b ]
+        endpointPairs =
+            List.map2 (,) points offsetPoints
 
-        corners =
-            points
-                |> List.map post
+        innerPosts =
+            List.map postsBetweenPoints endpointPairs
                 |> List.concat
 
-        intermediate =
-            posts (intermediatePoints 0.5 a b)
+        --intermediate =
+        --posts (intermediatePoints 0.5 a b)
     in
         List.concat
-            [ corners
-            , intermediate
+            [ posts points
+            , innerPosts
             ]
 
 
@@ -253,8 +258,35 @@ house h w l r start =
             [ prism width height length (vec3 0 center 0)
             , roofSides hw hl roofBase roofTop
             , roof hw hl roofTop roofBase
-            , fromPostPath (postPathEdge w l)
+            , fromPostPath (postPathSquare w l)
             ]
+
+
+getPair : List Vec3 -> ( List Vec3, List Vec3 )
+getPair l =
+    ( l, toOffsetList l )
+
+
+toOffsetList : List Vec3 -> List Vec3
+toOffsetList l =
+    let
+        initial =
+            case List.head l of
+                Just v ->
+                    [ v ]
+
+                Nothing ->
+                    []
+
+        rest =
+            case List.tail l of
+                Just l ->
+                    l
+
+                Nothing ->
+                    []
+    in
+        List.concat [ rest, initial ]
 
 
 
@@ -277,6 +309,6 @@ postPathSquare : Float -> Float -> List Vec3
 postPathSquare w l =
     [ (vec3 w 0 l)
     , (vec3 -w 0 l)
-    , (vec3 w 0 -l)
     , (vec3 -w 0 -l)
+    , (vec3 w 0 -l)
     ]
