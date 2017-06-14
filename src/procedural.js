@@ -59,135 +59,6 @@ var addQuadForGrid = function(geo, pos, buildTriangles, vertsPerRow) {
     }
 }
 
-var buildDirectedQuad = function(geo, offset, widthDir, lengthDir) {
-    var v0 = offset.clone();
-    var v1 = offset.clone().add(widthDir);
-    var v2 = offset.clone().add(lengthDir);
-    var v3 = offset.clone().add(lengthDir).add(widthDir);
-
-    geo.vertices.push(v0);
-    geo.vertices.push(v1);
-    geo.vertices.push(v2);
-    geo.vertices.push(v3);
-
-    var baseIndex = geo.vertices.length - 4;
-    geo.faces.push(new THREE.Face3(baseIndex, baseIndex + 2, baseIndex + 1));
-    geo.faces.push(new THREE.Face3(baseIndex + 1, baseIndex + 2, baseIndex + 3));
-}
-
-var createPrism = (function(){
-
-    var v1 = new THREE.Vector3(); 
-    var v2 = new THREE.Vector3(); 
-    var v3 = new THREE.Vector3(); 
-    var nearCorner = new THREE.Vector3();
-    var farCorner = new THREE.Vector3().addVectors(v1, v2).add(v3);
-
-    return function(geo, upDir, rightDir, forwardDir) {
-        v1.copy( upDir );
-        v2.copy( rightDir );
-        v3.copy( forwardDir );
-
-        nearCorner.set(0, 0, 0);
-        farCorner.addVectors(v1, v2).add(v3);
-
-        buildDirectedQuad(geo, nearCorner, v3, v2);
-        buildDirectedQuad(geo, nearCorner, v2, v1);
-        buildDirectedQuad(geo, nearCorner, v1, v3);
-
-        v2.multiplyScalar(-1);
-        v3.multiplyScalar(-1);
-        v1.multiplyScalar(-1);
-
-        buildDirectedQuad(geo, farCorner, v2, v3);
-        buildDirectedQuad(geo, farCorner, v1, v2);
-        buildDirectedQuad(geo, farCorner, v3, v1);
-    };
-})();
-
-var addTri = function (geo, v1, v2, v3) {
-    geo.vertices.push( v1, v2, v3 );
-    var baseIndex = geo.vertices.length - 3;
-    geo.faces.push( new THREE.Face3( baseIndex, baseIndex+1, baseIndex+2 ) );
-}
-
-var createHouse = (function(){
-
-    var vUp = new THREE.Vector3(); 
-    var vRight = new THREE.Vector3(); 
-    var vForward = new THREE.Vector3(); 
-    var nearCorner = new THREE.Vector3();
-    var farCorner = new THREE.Vector3();
-    var pivotOffset = new THREE.Vector3();
-    var roofPeak = new THREE.Vector3();
-    var wallTopLeft = new THREE.Vector3();
-    var wallTopRight = new THREE.Vector3();
-
-    return function(geo, opts) {
-        opts = opts || {};
-
-        opts.width = opts.width || 2.0;
-        opts.length = opts.length || 2.0;
-        opts.height = opts.height || 2.0;
-        
-        vUp.copy( globalUp ).multiplyScalar(opts.height);
-        vRight.copy( globalRight ).multiplyScalar(opts.width);
-        vForward.copy( globalForward ).multiplyScalar(opts.length);
-
-        opts.start = opts.start || new THREE.Vector3(0, 0, 0);
-        nearCorner.copy(opts.start);
-        farCorner.addVectors(vUp, vRight).add(vForward).add(opts.start);
-
-        // set object origin to base of house
-        pivotOffset.addVectors(vRight, vForward).multiplyScalar(0.5);
-        farCorner.sub(pivotOffset);
-        nearCorner.sub(pivotOffset);
-
-        // build horizontal walls
-        buildDirectedQuad(geo, nearCorner, vRight, vUp);
-        buildDirectedQuad(geo, nearCorner, vUp, vForward);
-        vRight.multiplyScalar(-1);
-        vForward.multiplyScalar(-1);
-        vUp.multiplyScalar(-1);
-        buildDirectedQuad(geo, farCorner, vUp, vRight);
-        buildDirectedQuad(geo, farCorner, vForward, vUp);
-        vRight.multiplyScalar(-1);
-        vForward.multiplyScalar(-1);
-        vUp.multiplyScalar(-1);
-
-        // roof
-        roofPeak.set(0, 0, 0).addScaledVector(globalUp, vUp.length() + m_RoofHeight).addScaledVector(vRight, 0.5).sub(pivotOffset).add(opts.start);
-        wallTopLeft.subVectors(vUp, pivotOffset).add(opts.start);
-        wallTopRight.addVectors(vUp, vRight).sub(pivotOffset).add(opts.start);
-
-        addTri(geo, wallTopLeft.clone(), roofPeak.clone(), wallTopRight.clone());
-        roofPeak.add(vForward);
-        wallTopLeft.add(vForward);
-        wallTopRight.add(vForward);
-        addTri(geo, wallTopLeft.clone(), wallTopRight.clone(), roofPeak.clone());
-
-        roofPeak.sub(vForward);
-        wallTopLeft.sub(vForward);
-        wallTopRight.sub(vForward);
-
-        var dirFromPeakLeft = new THREE.Vector3().subVectors(wallTopLeft, roofPeak);
-        var dirFromPeakRight = new THREE.Vector3().subVectors(wallTopRight, roofPeak);
-
-        var normDirFromPeakLeft = dirFromPeakLeft.clone().normalize();
-        var normDirFromPeakRight = dirFromPeakRight.clone().normalize();
-        dirFromPeakLeft.addScaledVector(normDirFromPeakLeft, m_RoofOverhangSide);
-        dirFromPeakRight.addScaledVector(normDirFromPeakRight, m_RoofOverhangSide);
-
-        roofPeak.addScaledVector( globalForward, -m_RoofOverhangFront);
-        vForward.addScaledVector( globalForward, m_RoofOverhangFront * 2);
-
-        buildDirectedQuad(geo, roofPeak, vForward, dirFromPeakLeft);
-        buildDirectedQuad(geo, roofPeak, dirFromPeakRight, vForward);
-        buildDirectedQuad(geo, roofPeak, dirFromPeakLeft, vForward);
-        buildDirectedQuad(geo, roofPeak, vForward, dirFromPeakRight);
-    };
-})();
-
 var buildPost = function(geo, position, rotation) {
 
     var postHeight = m_PostHeight + Math.random()*m_PostHeightVariation;
@@ -416,26 +287,14 @@ var createGeometry = function() {
     var rotation = new THREE.Quaternion();
     rotation.setFromUnitVectors(globalRight, globalForward);
 
-    createHouse(geometry, {
-        start: new THREE.Vector3(10, 0, 10)
-    });
-    createHouse(geometry, {
-        start: new THREE.Vector3(30, 0, 30),
-        width: 8,
-        length: 10,
-        height: 5
-    });
-    createHouse(geometry, {
-        start: new THREE.Vector3(50, 0, 50)
-    });
     //createConnectedGrid(geometry);
-    createFencePath(geometry, [
-        new THREE.Vector3( 20, 0, 20 ),
-        new THREE.Vector3( 40, 0, 20 ),
-        new THREE.Vector3( 40, 0, 40 ),
-        new THREE.Vector3( 20, 0, 40 ),
-        new THREE.Vector3( 20, 0, 20 )
-    ]);
+    //createFencePath(geometry, [
+        //new THREE.Vector3( 20, 0, 20 ),
+        //new THREE.Vector3( 40, 0, 20 ),
+        //new THREE.Vector3( 40, 0, 40 ),
+        //new THREE.Vector3( 20, 0, 40 ),
+        //new THREE.Vector3( 20, 0, 20 )
+    //]);
 
     geometry.computeBoundingBox();
     geometry.computeFaceNormals();
@@ -443,29 +302,29 @@ var createGeometry = function() {
     return geometry;
 }
 
-var scene = new THREE.Scene();
-var camera = new THREE.PerspectiveCamera( 75, WIDTH/HEIGHT, 0.1, 1000 );
+//var scene = new THREE.Scene();
+//var camera = new THREE.PerspectiveCamera( 75, WIDTH/HEIGHT, 0.1, 1000 );
 
-var renderer = new THREE.WebGLRenderer();
-renderer.setSize( WIDTH, HEIGHT );
-document.body.appendChild( renderer.domElement );
+//var renderer = new THREE.WebGLRenderer();
+//renderer.setSize( WIDTH, HEIGHT );
+//document.body.appendChild( renderer.domElement );
 
-var geometry = createGeometry();
-var material = new THREE.MeshNormalMaterial( );
-var mesh = new THREE.Mesh( geometry, material );
-scene.add( mesh );
+//var geometry = createGeometry();
+//var material = new THREE.MeshNormalMaterial( );
+//var mesh = new THREE.Mesh( geometry, material );
+//scene.add( mesh );
 
-var geoCenter = new THREE.Vector3();
-geoCenter.addVectors(geometry.boundingBox.min, geometry.boundingBox.max).multiplyScalar(0.5);
+//var geoCenter = new THREE.Vector3();
+//geoCenter.addVectors(geometry.boundingBox.min, geometry.boundingBox.max).multiplyScalar(0.5);
 
-var axisHelper = new THREE.AxisHelper( 5 );
-scene.add( axisHelper );
+//var axisHelper = new THREE.AxisHelper( 5 );
+//scene.add( axisHelper );
 
-camera.position.set(3, 4, 4);
-// var objCenter = new THREE.Vector3(0, 0, 0)
-var controls = new OrbitControls( camera, renderer.domElement, {
-    target: geoCenter
-});
+//camera.position.set(3, 4, 4);
+//// var objCenter = new THREE.Vector3(0, 0, 0)
+//var controls = new OrbitControls( camera, renderer.domElement, {
+    //target: geoCenter
+//});
 
 
 var render = function () {
