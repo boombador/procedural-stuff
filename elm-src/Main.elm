@@ -13,7 +13,6 @@ import Time exposing (Time)
 import WebGL exposing (Mesh, Shader)
 
 
-
 main : Program Never Time Time
 main =
     Html.program
@@ -59,11 +58,34 @@ type alias Vertex =
 mesh : Mesh Vertex
 mesh =
     WebGL.triangles
-        [ ( Vertex (vec3 0 0 0) (vec3 1 0 0)
-          , Vertex (vec3 1 1 0) (vec3 0 1 0)
-          , Vertex (vec3 1 -1 0) (vec3 0 0 1)
-          )
+        (quad
+            (vec3 0 0 0)
+            (vec3 0.5 0.5 0)
+            (vec3 -0.5 0.5 0)
+        )
+
+
+quad : Vec3 -> Vec3 -> Vec3 -> List ( Vertex, Vertex, Vertex )
+quad corner x y =
+    let
+        ( a, b, c, d ) =
+            ( corner
+            , Vec3.add corner x
+            , Vec3.add corner (Vec3.add x y)
+            , Vec3.add corner y
+            )
+    in
+        [ tri a b c
+        , tri a c d
         ]
+
+
+tri : Vec3 -> Vec3 -> Vec3 -> ( Vertex, Vertex, Vertex )
+tri x y z =
+    ( Vertex x (vec3 1 0 0)
+    , Vertex y (vec3 0 1 0)
+    , Vertex z (vec3 0 0 1)
+    )
 
 
 
