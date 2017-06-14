@@ -302,29 +302,29 @@ var createGeometry = function() {
     return geometry;
 }
 
-var scene = new THREE.Scene();
-var camera = new THREE.PerspectiveCamera( 75, WIDTH/HEIGHT, 0.1, 1000 );
+//var scene = new THREE.Scene();
+//var camera = new THREE.PerspectiveCamera( 75, WIDTH/HEIGHT, 0.1, 1000 );
 
-var renderer = new THREE.WebGLRenderer();
-renderer.setSize( WIDTH, HEIGHT );
-document.body.appendChild( renderer.domElement );
+//var renderer = new THREE.WebGLRenderer();
+//renderer.setSize( WIDTH, HEIGHT );
+//document.body.appendChild( renderer.domElement );
 
-var geometry = createGeometry();
-var material = new THREE.MeshNormalMaterial( );
-var mesh = new THREE.Mesh( geometry, material );
-scene.add( mesh );
+//var geometry = createGeometry();
+//var material = new THREE.MeshNormalMaterial( );
+//var mesh = new THREE.Mesh( geometry, material );
+//scene.add( mesh );
 
-var geoCenter = new THREE.Vector3();
-geoCenter.addVectors(geometry.boundingBox.min, geometry.boundingBox.max).multiplyScalar(0.5);
+//var geoCenter = new THREE.Vector3();
+//geoCenter.addVectors(geometry.boundingBox.min, geometry.boundingBox.max).multiplyScalar(0.5);
 
-var axisHelper = new THREE.AxisHelper( 5 );
-scene.add( axisHelper );
+//var axisHelper = new THREE.AxisHelper( 5 );
+//scene.add( axisHelper );
 
-camera.position.set(3, 4, 4);
-// var objCenter = new THREE.Vector3(0, 0, 0)
-var controls = new OrbitControls( camera, renderer.domElement, {
-    target: geoCenter
-});
+//camera.position.set(3, 4, 4);
+//// var objCenter = new THREE.Vector3(0, 0, 0)
+//var controls = new OrbitControls( camera, renderer.domElement, {
+    //target: geoCenter
+//});
 
 
 var render = function () {
