@@ -191,13 +191,24 @@ house h w l r start =
             [ prism width height length (vec3 0 center 0)
             , roofSides hw hl roofBase roofTop
             , roof hw hl roofTop roofBase
-            , posts
-                [ (vec3 w 0 l)
-                , (vec3 -w 0 l)
-                , (vec3 w 0 -l)
-                , (vec3 -w 0 -l)
-                ]
+            , fromPostPath (postPathEdge w l)
             ]
+
+
+postPathEdge : Float -> Float -> ( Vec3, Vec3 )
+postPathEdge w l =
+    ( (vec3 w 0 l)
+    , (vec3 -w 0 l)
+    )
+
+
+postPathSquare : Float -> Float -> List Vec3
+postPathSquare w l =
+    [ (vec3 w 0 l)
+    , (vec3 -w 0 l)
+    , (vec3 w 0 -l)
+    , (vec3 -w 0 -l)
+    ]
 
 
 posts : List Vec3 -> List ( Vertex, Vertex, Vertex )
@@ -205,6 +216,76 @@ posts locations =
     locations
         |> List.map post
         |> List.concat
+
+
+postsBetweenEndpoints : Int -> Vec3 -> Vec3 -> List ( Vertex, Vertex, Vertex )
+postsBetweenEndpoints count a b =
+    let
+        distance =
+            Vec3.distance a b
+
+        split : Int
+        split =
+            floor (distance / toFloat count)
+    in
+        []
+
+
+interpolate : Vec3 -> Vec3 -> Float -> Vec3
+interpolate a b s =
+    let
+        aToB =
+            Vec3.sub b a
+
+        offset =
+            Vec3.scale s aToB
+    in
+        Vec3.add a offset
+
+
+maxSegmentsWithMinLength : Float -> Float -> Int
+maxSegmentsWithMinLength minLength distance =
+    floor (distance / minLength)
+
+
+intermediatePoints : Float -> Vec3 -> Vec3 -> List Vec3
+intermediatePoints targetSplit a b =
+    let
+        count =
+            maxSegmentsWithMinLength targetSplit (Vec3.distance a b)
+
+        fromS =
+            interpolate a b
+
+        sEntries =
+            List.range 0 count
+                |> List.map (\i -> 1 / toFloat i)
+    in
+        sEntries
+            |> List.map fromS
+
+
+fromPostPath : ( Vec3, Vec3 ) -> List ( Vertex, Vertex, Vertex )
+fromPostPath endpoints =
+    let
+        ( a, b ) =
+            endpoints
+
+        points =
+            [ a, b ]
+
+        corners =
+            points
+                |> List.map post
+                |> List.concat
+
+        intermediate =
+            posts (intermediatePoints 0.5 a b)
+    in
+        List.concat
+            [ corners
+            , intermediate
+            ]
 
 
 roof : Float -> Float -> Float -> Float -> List ( Vertex, Vertex, Vertex )
