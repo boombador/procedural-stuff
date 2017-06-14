@@ -140,18 +140,12 @@ postsBetweenPoints ( a, b ) =
 postsFromPath : List Vec3 -> List ( Vertex, Vertex, Vertex )
 postsFromPath points =
     let
-        offsetPoints =
-            toOffsetList points
-
         endpointPairs =
-            List.map2 (,) points offsetPoints
+            List.map2 (,) points (toOffsetList points)
 
         innerPosts =
             List.map postsBetweenPoints endpointPairs
                 |> List.concat
-
-        --intermediate =
-        --posts (intermediatePoints 0.5 a b)
     in
         List.concat
             [ posts points
@@ -248,16 +242,17 @@ houseOpts width height length roofHeight start =
         }
 
 
-origin : Vec3
-origin =
-    vec3 0 0 0
-
-
+sceneTriangles : List ( Vertex, Vertex, Vertex )
 sceneTriangles =
-    List.concat
-        [ house 1 1 1 0.5 origin
-        , terrain 10
-        ]
+    let
+        ( w, h, l, r, origin ) =
+            ( 1, 1, 1, 0.5, vec3 0 0 0 )
+    in
+        List.concat
+            [ house w h l r origin
+            , postsFromPath (rectangularPath w l)
+            , terrain 10
+            ]
 
 
 house : Float -> Float -> Float -> Float -> Vec3 -> List ( Vertex, Vertex, Vertex )
@@ -270,7 +265,6 @@ house h w l r start =
             [ prism width height length (vec3 0 center 0)
             , roofSides hw hl roofBase roofTop
             , roof hw hl roofTop roofBase
-            , postsFromPath (squarePath w l)
             ]
 
 
@@ -310,24 +304,8 @@ toOffsetList l =
         List.concat [ rest, initial ]
 
 
-
--- sample data
-
-
-samplePrism : List ( Vertex, Vertex, Vertex )
-samplePrism =
-    prism 0.5 3 0.5 (vec3 0 0 0)
-
-
-postPathEdge : Float -> Float -> ( Vec3, Vec3 )
-postPathEdge w l =
-    ( (vec3 w 0 l)
-    , (vec3 -w 0 l)
-    )
-
-
-squarePath : Float -> Float -> List Vec3
-squarePath w l =
+rectangularPath : Float -> Float -> List Vec3
+rectangularPath w l =
     [ (vec3 w 0 l)
     , (vec3 -w 0 l)
     , (vec3 -w 0 -l)
