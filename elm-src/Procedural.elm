@@ -102,25 +102,32 @@ interpolate a b s =
         Vec3.add a offset
 
 
-maxSegmentsWithMinLength : Float -> Float -> Int
-maxSegmentsWithMinLength minLength distance =
-    floor (distance / minLength)
+segmentsFromLength : Float -> Float -> Int
+segmentsFromLength minLength distance =
+    ceiling (distance / minLength)
+
+
+{-| Calculate a list of values within (0,1) representing the fractional
+position of each split point when dividing the unit lenght into the requested
+number of segments
+
+-}
+sEntriesForCount : Int -> List Float
+sEntriesForCount count =
+    List.range 1 (count - 1)
+        |> List.map (\i -> (toFloat i / toFloat count))
 
 
 intermediatePoints : Float -> Vec3 -> Vec3 -> List Vec3
 intermediatePoints targetSplit a b =
     let
         count =
-            maxSegmentsWithMinLength targetSplit (Vec3.distance a b)
+            segmentsFromLength targetSplit (Vec3.distance a b)
 
         fromS =
             interpolate a b
-
-        sEntries =
-            List.range 0 count
-                |> List.map (\i -> 1 / toFloat i)
     in
-        sEntries
+        sEntriesForCount count
             |> List.map fromS
 
 
@@ -191,6 +198,7 @@ post base =
     in
         prism x y z center
 
+
 type alias HouseOpts =
     { center : Float
     , height : Float
@@ -204,6 +212,7 @@ type alias HouseOpts =
     , start : Vec3
     , width : Float
     }
+
 
 houseOpts : Float -> Float -> Float -> Float -> Vec3 -> HouseOpts
 houseOpts width height length roofHeight start =

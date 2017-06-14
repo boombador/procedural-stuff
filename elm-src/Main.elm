@@ -1,6 +1,5 @@
 module Main exposing (..)
 
-import Procedural exposing (house, Vertex)
 import AnimationFrame
 import Html exposing (Html)
 import Html.Attributes exposing (width, height, style)
@@ -8,6 +7,7 @@ import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (vec3, Vec3)
 import Time exposing (Time)
 import WebGL exposing (Mesh, Shader)
+import Procedural exposing (house, Vertex)
 
 
 main : Program Never Time Time
@@ -44,12 +44,16 @@ origin : Vec3
 origin =
     vec3 0 0 0
 
+eyeHeight : Float
+eyeHeight = 
+    1
+
 
 perspective : Float -> Mat4
 perspective t =
     Mat4.mul
         (Mat4.makePerspective 45 1 0.01 100)
-        (Mat4.makeLookAt (vec3 (4 * cos t) 0 (4 * sin t)) target (vec3 0 1 0))
+        (Mat4.makeLookAt (vec3 (4 * cos t) eyeHeight (4 * sin t)) target (vec3 0 1 0))
 
 
 
