@@ -53,20 +53,25 @@ view t =
         ]
 
 
-perspective : Float -> Mat4
-perspective t =
-    Mat4.mul
-        (Mat4.makePerspective 45 1 0.01 100)
-        (Mat4.makeLookAt (vec3 (4 * cos t) 0 (4 * sin t)) (vec3 0 0 0) (vec3 0 1 0))
-
-
-
--- Mesh
+target : Vec3
+target =
+    vec3 0 0 0
 
 
 origin : Vec3
 origin =
     vec3 0 0 0
+
+
+perspective : Float -> Mat4
+perspective t =
+    Mat4.mul
+        (Mat4.makePerspective 45 1 0.01 100)
+        (Mat4.makeLookAt (vec3 (4 * cos t) 0 (4 * sin t)) target (vec3 0 1 0))
+
+
+
+-- Mesh
 
 
 type alias Vertex =
@@ -77,12 +82,7 @@ type alias Vertex =
 
 mesh : Mesh Vertex
 mesh =
-    WebGL.triangles (house 1 1 1 1)
-
-
-samplePrism : List ( Vertex, Vertex, Vertex )
-samplePrism =
-    prism 0.5 3 0.5 (vec3 0 0 0)
+    WebGL.triangles (house 1 1 1 0.5 origin)
 
 
 cube : Float -> Vec3 -> List ( Vertex, Vertex, Vertex )
@@ -90,8 +90,19 @@ cube s =
     prism s s s
 
 
+post : Vec3 -> List ( Vertex, Vertex, Vertex )
+post base =
+    let
+        ( x, y, z ) =
+            ( 0.1, 0.5, 0.1 )
 
-{- axis aligned bounding box. for simplicity assumes double sided triangles -}
+        centerY =
+            (y / 2) + Vec3.getY base
+
+        center =
+            Vec3.setY centerY base
+    in
+        prism x y z center
 
 
 prism : Float -> Float -> Float -> Vec3 -> List ( Vertex, Vertex, Vertex )
@@ -141,8 +152,8 @@ quad corner x y =
             ]
 
 
-houseOpts : Float -> Float -> Float -> Float -> HouseOpts
-houseOpts width height length roofHeight =
+houseOpts : Float -> Float -> Float -> Float -> Vec3 -> HouseOpts
+houseOpts width height length roofHeight start =
     let
         ( hw, hh, hl ) =
             ( width / 2
@@ -151,16 +162,16 @@ houseOpts width height length roofHeight =
             )
 
         ( center, roofBase, roofTop ) =
-            ( hh
-            , height
-            , height + roofHeight
+            ( hh + Vec3.getY start
+            , height + Vec3.getY start
+            , height + roofHeight + Vec3.getY start
             )
     in
         { width = width
         , height = height
         , length = length
-        , roofHeight = 1
-        , start = vec3 0 0 0
+        , roofHeight = roofHeight
+        , start = start
         , hw = hw
         , hh = hh
         , hl = hl
@@ -170,17 +181,30 @@ houseOpts width height length roofHeight =
         }
 
 
-house : Float -> Float -> Float -> Float -> List ( Vertex, Vertex, Vertex )
-house h w l r =
+house : Float -> Float -> Float -> Float -> Vec3 -> List ( Vertex, Vertex, Vertex )
+house h w l r start =
     let
-        { width, height, length, roofHeight, start, hw, hh, hl, center, roofBase, roofTop } =
-            houseOpts h w l r
+        { width, height, length, roofHeight, hw, hh, hl, center, roofBase, roofTop } =
+            houseOpts h w l r start
     in
         List.concat
             [ prism width height length (vec3 0 center 0)
             , roofSides hw hl roofBase roofTop
             , roof hw hl roofTop roofBase
+            , posts
+                [ (vec3 w 0 l)
+                , (vec3 -w 0 l)
+                , (vec3 w 0 -l)
+                , (vec3 -w 0 -l)
+                ]
             ]
+
+
+posts : List Vec3 -> List ( Vertex, Vertex, Vertex )
+posts locations =
+    locations
+        |> List.map post
+        |> List.concat
 
 
 roof : Float -> Float -> Float -> Float -> List ( Vertex, Vertex, Vertex )
@@ -220,6 +244,11 @@ tri x y z =
       , Vertex z (vec3 0 0 1)
       )
     ]
+
+
+samplePrism : List ( Vertex, Vertex, Vertex )
+samplePrism =
+    prism 0.5 3 0.5 (vec3 0 0 0)
 
 
 
