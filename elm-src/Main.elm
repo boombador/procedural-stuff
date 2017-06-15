@@ -1,5 +1,6 @@
 module Main exposing (..)
 
+import Models exposing (Model, initialModel)
 import AnimationFrame
 import Html exposing (Html)
 import Html.Attributes exposing (width, height, style)
@@ -11,19 +12,34 @@ import Procedural.Main exposing (sampleTriangles)
 import Procedural.Models exposing (Vertex)
 
 
+type Msg
+    = TimeUpdate Time
 
-main : Program Never Time Time
+
+main : Program Never Model Msg
 main =
     Html.program
-        { init = ( 0, Cmd.none )
+        { init = ( initialModel, Cmd.none )
         , view = view
-        , subscriptions = (\model -> AnimationFrame.diffs Basics.identity)
-        , update = (\elapsed currentTime -> ( elapsed + currentTime, Cmd.none ))
+        , subscriptions = subscriptions
+        , update = update
         }
 
 
-view : Float -> Html msg
-view t =
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg model =
+    case msg of
+        TimeUpdate elapsed ->
+            ( { model | currentTime = model.currentTime + elapsed }, Cmd.none )
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    AnimationFrame.diffs TimeUpdate
+
+
+view : Model -> Html msg
+view { currentTime } =
     WebGL.toHtml
         [ width 400
         , height 400
@@ -33,7 +49,7 @@ view t =
             vertexShader
             fragmentShader
             mesh
-            { perspective = perspective (t / 1000) }
+            { perspective = perspective (currentTime / 1000) }
         ]
 
 
@@ -43,7 +59,7 @@ target =
 
 
 eyeHeight : Float
-eyeHeight = 
+eyeHeight =
     1
 
 
