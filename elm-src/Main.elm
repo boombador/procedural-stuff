@@ -7,7 +7,9 @@ import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (vec3, Vec3)
 import Time exposing (Time)
 import WebGL exposing (Mesh, Shader)
-import Procedural exposing (sceneTriangles, house, Vertex)
+import Procedural.Main exposing (sampleTriangles)
+import Procedural.Models exposing (Vertex)
+
 
 
 main : Program Never Time Time
@@ -58,7 +60,7 @@ perspective t =
 
 mesh : Mesh Vertex
 mesh =
-    WebGL.triangles sceneTriangles
+    WebGL.triangles sampleTriangles
 
 
 
