@@ -2,14 +2,9 @@ module Main exposing (..)
 
 import AnimationFrame
 import Html exposing (Html, div)
-import Math.Vector3 as Vec3 exposing (vec3, Vec3)
-import Time exposing (Time)
 import View
 import Models exposing (Model, initialModel)
-
-
-type Msg
-    = TimeUpdate Time
+import Msgs exposing (Msg(..))
 
 
 main : Program Never Model Msg

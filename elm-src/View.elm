@@ -1,29 +1,47 @@
 module View exposing (view)
 
 import Models exposing (Model)
-import Html exposing (Html, div)
-import Html.Attributes exposing (width, height, style)
+import Html exposing (Html, div, h1, text)
+import Html.Attributes exposing (class, width, height, style)
 import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (vec3, Vec3)
 import WebGL exposing (Mesh, Shader)
 import Procedural.Main exposing (sampleTriangles)
 import Procedural.Models exposing (Vertex)
+import Msgs exposing (Msg)
 
 
-view : Model -> Html msg
-view { currentTime } =
-    div []
-        [ WebGL.toHtml
-            [ width 400
-            , height 400
-            , style [ ( "display", "block" ) ]
+pageWrapper : Html Msg -> Html Msg
+pageWrapper contents =
+    div
+        [ style [ ( "", "" ) ]
+        , class "clearfix"
+        ]
+        [ div []
+            [ h1 [ class "h1 center" ] [ text "Procedural Geometry with Elm" ]
+            , contents
             ]
-            [ WebGL.entity
-                vertexShader
-                fragmentShader
-                mesh
-                { perspective = perspective (currentTime / 1000) }
-            ]
+        ]
+
+
+view : Model -> Html Msg
+view =
+    pageWrapper << embeddedCanvas
+
+
+embeddedCanvas : Model -> Html Msg
+embeddedCanvas model =
+    WebGL.toHtml
+        [ width 400
+        , height 400
+        , class "mx-auto"
+        , style [ ( "display", "block" ) ]
+        ]
+        [ WebGL.entity
+            vertexShader
+            fragmentShader
+            mesh
+            { perspective = perspective (model.currentTime / 1000) }
         ]
 
 
