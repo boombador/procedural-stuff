@@ -16,60 +16,24 @@ import Procedural.Models exposing (TriangleMesh)
 
 
 house : Float -> Float -> Float -> Float -> Vec3 -> TriangleMesh
-house h w l r start =
-    let
-        { width, height, length, roofHeight, hw, hh, hl, center, roofBase, roofTop } =
-            houseOpts h w l r start
-    in
-        List.concat
-            [ prism width height length (vec3 0 center 0)
-            , roofSides hw hl roofBase roofTop
-            , roof hw hl roofTop roofBase
-            ]
-
-
-type alias HouseOpts =
-    { center : Float
-    , height : Float
-    , hh : Float
-    , hl : Float
-    , hw : Float
-    , length : Float
-    , roofBase : Float
-    , roofHeight : Float
-    , roofTop : Float
-    , start : Vec3
-    , width : Float
-    }
-
-
-houseOpts : Float -> Float -> Float -> Float -> Vec3 -> HouseOpts
-houseOpts width height length roofHeight start =
+house width height length roofHeight start =
     let
         ( hw, hh, hl ) =
             ( width / 2
             , height / 2
             , length / 2
             )
-
         ( center, roofBase, roofTop ) =
             ( hh + Vec3.getY start
             , height + Vec3.getY start
             , height + roofHeight + Vec3.getY start
             )
     in
-        { width = width
-        , height = height
-        , length = length
-        , roofHeight = roofHeight
-        , start = start
-        , hw = hw
-        , hh = hh
-        , hl = hl
-        , center = center
-        , roofBase = roofBase
-        , roofTop = roofTop
-        }
+        List.concat
+            [ prism width height length (vec3 0 center 0)
+            , roofSides hw hl roofBase roofTop
+            , roof hw hl roofTop roofBase
+            ]
 
 
 roofSides : Float -> Float -> Float -> Float -> TriangleMesh
