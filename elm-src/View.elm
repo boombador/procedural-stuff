@@ -40,14 +40,9 @@ embeddedCanvas model =
         [ WebGL.entity
             vertexShader
             fragmentShader
-            mesh
+            (WebGL.triangles sampleTriangles)
             { perspective = perspective (model.currentTime / 1000) }
         ]
-
-
-mesh : Mesh Vertex
-mesh =
-    WebGL.triangles sampleTriangles
 
 
 target : Vec3
