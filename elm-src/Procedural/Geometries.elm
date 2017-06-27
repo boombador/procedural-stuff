@@ -115,37 +115,25 @@ posts locations =
 
 postsFromPath : List Vec3 -> TriangleMesh
 postsFromPath points =
-    List.map2 (,) points (toOffsetList points)
+    List.map2 (,) points (offsetList points)
         |> List.map postsBetweenPoints
         |> List.concat
         |> toMesh postColor
 
 
-toOffsetList : List Vec3 -> List Vec3
-toOffsetList l =
-    let
-        initial =
-            case List.head l of
-                Just v ->
-                    [ v ]
+offsetList : List Vec3 -> List Vec3
+offsetList l =
+    case l of
+        x :: xs ->
+            List.append xs [ x ]
 
-                Nothing ->
-                    []
-
-        rest =
-            case List.tail l of
-                Just l ->
-                    l
-
-                Nothing ->
-                    []
-    in
-        List.concat [ rest, initial ]
+        _ ->
+            []
 
 
 postsBetweenPoints : ( Vec3, Vec3 ) -> Tris
 postsBetweenPoints ( a, b ) =
-    posts (generateIntermediatePoints 0.5 a b)
+    posts (generateIntermediatePoints a b 0.5)
 
 
 
@@ -224,8 +212,8 @@ rectangularPath w l =
     ]
 
 
-generateIntermediatePoints : Float -> Vec3 -> Vec3 -> List Vec3
-generateIntermediatePoints targetSplit a b =
+generateIntermediatePoints : Vec3 -> Vec3 -> Float -> List Vec3
+generateIntermediatePoints a b targetSplit =
     let
         count =
             segmentsFromLength targetSplit (Vec3.distance a b)
