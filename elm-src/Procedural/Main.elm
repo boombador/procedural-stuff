@@ -14,5 +14,5 @@ sampleTriangles =
         List.concat
             [ house width height length roofHeight origin
             , postsFromPath (rectangularPath width length)
-            , groundPlane 10
+            , groundPlane 10000
             ]
