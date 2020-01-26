@@ -1,7 +1,7 @@
 module Procedural.Primitives exposing (..)
 
-import Math.Vector3 as Vec3 exposing (vec3, Vec3)
-import Procedural.Models exposing (Vertex, Tris, TriangleMesh, Color)
+import Math.Vector3 as Vec3 exposing (Vec3, vec3)
+import Procedural.Models exposing (Color, TriangleMesh, Tris, Vertex)
 
 
 toMesh : Color -> Tris -> TriangleMesh
@@ -24,17 +24,17 @@ tri x y z =
 quad : Vec3 -> Vec3 -> Vec3 -> Tris
 quad corner x y =
     let
-        ( a, b, c, d ) =
-            ( corner
-            , Vec3.add corner x
-            , Vec3.add corner (Vec3.add x y)
-            , Vec3.add corner y
-            )
+        { a, b, c, d } =
+            { a = corner
+            , b = Vec3.add corner x
+            , c = Vec3.add corner (Vec3.add x y)
+            , d = Vec3.add corner y
+            }
     in
-        List.concat
-            [ tri a b c
-            , tri a c d
-            ]
+    List.concat
+        [ tri a b c
+        , tri a c d
+        ]
 
 
 cube : Float -> Vec3 -> Tris
@@ -63,11 +63,11 @@ prism w h l center =
         farCorner =
             List.foldl Vec3.add nearCorner [ x, y, z ]
     in
-        List.concat
-            [ quad nearCorner x y
-            , quad nearCorner x z
-            , quad nearCorner y z
-            , quad farCorner negX negY
-            , quad farCorner negX negZ
-            , quad farCorner negY negZ
-            ]
+    List.concat
+        [ quad nearCorner x y
+        , quad nearCorner x z
+        , quad nearCorner y z
+        , quad farCorner negX negY
+        , quad farCorner negX negZ
+        , quad farCorner negY negZ
+        ]

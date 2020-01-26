@@ -1,6 +1,6 @@
 module Procedural.Models exposing (..)
 
-import Math.Vector3 as Vec3 exposing (vec3, Vec3)
+import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 
 
 type alias Color =

@@ -1,29 +1,38 @@
 module Main exposing (..)
 
-import AnimationFrame
+import Browser
+import Browser.Events exposing (onAnimationFrame, onAnimationFrameDelta)
 import Html exposing (Html, div)
-import View
 import Models exposing (Model, initialModel)
 import Msgs exposing (Msg(..))
+import View
 
 
-main : Program Never Model Msg
+
+-- main : Program Never Model Msg
+
+
 main =
-    Html.program
-        { init = ( initialModel, Cmd.none )
+    Browser.element
+        { init = init
         , view = View.view
         , subscriptions = subscriptions
         , update = update
         }
 
 
+init : () -> ( Model, Cmd Msg )
+init _ =
+    ( initialModel, Cmd.none )
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        TimeUpdate elapsed ->
+        AnimationFrameDeltaInMS elapsed ->
             ( { model | currentTime = model.currentTime + elapsed }, Cmd.none )
 
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    AnimationFrame.diffs TimeUpdate
+    onAnimationFrameDelta AnimationFrameDeltaInMS

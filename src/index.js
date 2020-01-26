@@ -3,9 +3,14 @@
 require('ace-css/css/ace.css');
 require('font-awesome/css/font-awesome.css');
 
-const Elm = require('../elm-src/Main.elm');
+const root = document.createElement('div');
+root.id = 'elm-root';
+document.body.appendChild(root);
 
-const app = Elm.Main.fullscreen();
+const Elm = require('../elm-src/Main.elm').Elm;
+const app = Elm.Main.init({
+  node: root,
+});
 
 //export const meshResponseListener = cb => {
   //app.ports.emitMesh.subscribe(cb);

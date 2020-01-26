@@ -1,15 +1,15 @@
-module Procedural.Geometries
-    exposing
-        ( house
-        , groundPlane
-        , posts
-        , postsFromPath
-        , rectangularPath
-        )
+module Procedural.Geometries exposing
+    ( groundPlane
+    , house
+    , posts
+    , postsFromPath
+    , rectangularPath
+    )
 
-import Math.Vector3 as Vec3 exposing (vec3, Vec3)
-import Procedural.Primitives exposing (tri, quad, cube, prism, toMesh)
+import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Procedural.Models exposing (TriangleMesh, Tris)
+import Procedural.Primitives exposing (cube, prism, quad, toMesh, tri)
+
 
 
 -- House
@@ -50,11 +50,11 @@ house width height length roofHeight start =
             , height + roofHeight + Vec3.getY start
             )
     in
-        List.concat
-            [ toMesh houseColor (prism width height length (vec3 0 center 0))
-            , toMesh houseColor (roofSides hw hl roofBase roofTop)
-            , toMesh roofColor (roof hw hl roofTop roofBase)
-            ]
+    List.concat
+        [ toMesh houseColor (prism width height length (vec3 0 center 0))
+        , toMesh houseColor (roofSides hw hl roofBase roofTop)
+        , toMesh roofColor (roof hw hl roofTop roofBase)
+        ]
 
 
 roofSides : Float -> Float -> Float -> Float -> Tris
@@ -68,12 +68,12 @@ roofSides hw hl roofBase roofTop =
 roof : Float -> Float -> Float -> Float -> Tris
 roof hw hl roofTop roofBase =
     let
-        ( roofA, roofB, cornerA, cornerB ) =
-            ( vec3 hw roofTop 0
-            , vec3 -hw roofTop 0
-            , vec3 hw roofBase hl
-            , vec3 hw roofBase -hl
-            )
+        { roofA, roofB, cornerA, cornerB } =
+            { roofA = vec3 hw roofTop 0
+            , roofB = vec3 -hw roofTop 0
+            , cornerA = vec3 hw roofBase hl
+            , cornerB = vec3 hw roofBase -hl
+            }
 
         ( roofLine, downSlantA, downSlantB ) =
             ( Vec3.sub roofB roofA
@@ -81,10 +81,10 @@ roof hw hl roofTop roofBase =
             , Vec3.sub cornerB roofA
             )
     in
-        List.concat
-            [ quad roofA roofLine downSlantA
-            , quad roofA roofLine downSlantB
-            ]
+    List.concat
+        [ quad roofA roofLine downSlantA
+        , quad roofA roofLine downSlantB
+        ]
 
 
 
@@ -103,7 +103,7 @@ post base =
         center =
             Vec3.setY centerY base
     in
-        prism x y z center
+    prism x y z center
 
 
 posts : List Vec3 -> Tris
@@ -115,7 +115,7 @@ posts locations =
 
 postsFromPath : List Vec3 -> TriangleMesh
 postsFromPath points =
-    List.map2 (,) points (offsetList points)
+    List.map2 Tuple.pair points (offsetList points)
         |> List.map postsBetweenPoints
         |> List.concat
         |> toMesh postColor
@@ -141,7 +141,12 @@ postsBetweenPoints ( a, b ) =
 
 
 type alias Terrain =
-    ( Int, Int, Float, Float, List Float )
+    { xSegments : Int
+    , zSegments : Int
+    , xDelta : Float
+    , zDelta : Float
+    , heightList : List Float
+    }
 
 
 groundPlane : Float -> TriangleMesh
@@ -153,12 +158,30 @@ groundPlane toEdge =
             , -(toEdge / 2)
             )
     in
-        toMesh groundColor (quad (vec3 offset 0 offset) x z)
+    toMesh groundColor (quad (vec3 offset 0 offset) x z)
 
 
 terrain : Int -> Int -> Float -> Float -> List Float -> Terrain
 terrain xSegments zSegments xDelta zDelta heightList =
-    ( xSegments, zSegments, xDelta, zDelta, heightList )
+    { xSegments = xSegments
+    , zSegments = zSegments
+    , xDelta = xDelta
+    , zDelta = zDelta
+    , heightList = heightList
+    }
+
+
+remainder : Int -> Int -> Int
+remainder a b =
+    -- no idea if this is doing what the old `rem` function did
+    let
+        quotient =
+            a // b
+
+        leastMultiple =
+            quotient * b
+    in
+    a - leastMultiple
 
 
 {-| This is making the plane go over in the wrong area, but otherwise is
@@ -167,21 +190,21 @@ looking good
 terrainToMesh : Terrain -> Procedural.Models.Tris
 terrainToMesh t =
     let
-        ( x, z, dx, dz, heights ) =
+        { xSegments, zSegments, xDelta, zDelta, heightList } =
             t
 
         withIndices : Int -> Float -> ( Int, Int, Float )
         withIndices idx h =
-            ( rem idx x, (//) idx z, h )
+            ( remainder idx xSegments, idx // zSegments, h )
 
         quadFunc : ( Int, Int, Float ) -> Procedural.Models.Tris
         quadFunc =
-            toQuad dx dz
+            toQuad xDelta zDelta
     in
-        heights
-            |> List.indexedMap withIndices
-            |> List.map quadFunc
-            |> List.concat
+    heightList
+        |> List.indexedMap withIndices
+        |> List.map quadFunc
+        |> List.concat
 
 
 toQuad : Float -> Float -> ( Int, Int, Float ) -> Procedural.Models.Tris
@@ -196,7 +219,7 @@ toQuad dx dz triplet =
         start =
             vec3 xSide h zSide
     in
-        quad start (Vec3.scale xSide Vec3.i) (Vec3.scale zSide Vec3.k)
+    quad start (Vec3.scale xSide Vec3.i) (Vec3.scale zSide Vec3.k)
 
 
 
@@ -205,10 +228,10 @@ toQuad dx dz triplet =
 
 rectangularPath : Float -> Float -> List Vec3
 rectangularPath w l =
-    [ (vec3 w 0 l)
-    , (vec3 -w 0 l)
-    , (vec3 -w 0 -l)
-    , (vec3 w 0 -l)
+    [ vec3 w 0 l
+    , vec3 -w 0 l
+    , vec3 -w 0 -l
+    , vec3 w 0 -l
     ]
 
 
@@ -221,8 +244,8 @@ generateIntermediatePoints a b targetSplit =
         fromS =
             interpolate a b
     in
-        sEntriesForCount count
-            |> List.map fromS
+    sEntriesForCount count
+        |> List.map fromS
 
 
 segmentsFromLength : Float -> Float -> Int
@@ -239,7 +262,7 @@ interpolate a b s =
         offset =
             Vec3.scale s aToB
     in
-        Vec3.add a offset
+    Vec3.add a offset
 
 
 {-| Calculate a list of values within (0,1) representing the fractional
@@ -249,4 +272,4 @@ number of segments
 sEntriesForCount : Int -> List Float
 sEntriesForCount count =
     List.range 1 count
-        |> List.map (\i -> (toFloat i / toFloat count))
+        |> List.map (\i -> toFloat i / toFloat count)

@@ -1,8 +1,9 @@
 port module Worker exposing (..)
 
-import Html exposing (..)
 import Debug exposing (log)
+import Html exposing (..)
 import Task
+
 
 
 --import Html.Events exposing (..)
@@ -16,7 +17,7 @@ main =
         { init = init
         , view = view
         , update = update
-        , subscriptions = (always Sub.none) -- ??
+        , subscriptions = always Sub.none -- ??
         }
 
 
@@ -67,7 +68,7 @@ meshToString maybeMesh =
                         |> List.map toString
                         |> String.join ","
             in
-                String.concat [ "{\"vertices\": [", toCsv vertices, "], \"faces\": [", toCsv faces, "]}" ]
+            String.concat [ "{\"vertices\": [", toCsv vertices, "], \"faces\": [", toCsv faces, "]}" ]
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -80,10 +81,11 @@ update msg model =
             let
                 _ =
                     Debug.log "meshType" meshType
+
                 cmds =
                     Task.perform MeshGenerated (generateMesh meshType)
             in
-                ( { model | meshRequest = meshType }, cmds )
+            ( { model | meshRequest = meshType }, cmds )
 
         MeshGenerated mesh ->
             ( { model | mesh = Just mesh }, Cmd.none )

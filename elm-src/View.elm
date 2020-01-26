@@ -1,22 +1,20 @@
 module View exposing (view)
 
-import Models exposing (Model)
 import Html exposing (Html, div, h1, text)
-import Html.Attributes exposing (class, width, height, style)
+import Html.Attributes exposing (class, height, style, width)
 import Math.Matrix4 as Mat4 exposing (Mat4)
-import Math.Vector3 as Vec3 exposing (vec3, Vec3)
-import WebGL exposing (Mesh, Shader)
+import Math.Vector3 as Vec3 exposing (Vec3, vec3)
+import Models exposing (Model)
+import Msgs exposing (Msg)
 import Procedural.Main exposing (sampleTriangles)
 import Procedural.Models exposing (Vertex)
-import Msgs exposing (Msg)
+import WebGL exposing (Mesh, Shader)
 
 
 pageWrapper : Html Msg -> Html Msg
 pageWrapper contents =
     div
-        [ style [ ( "", "" ) ]
-        , class "clearfix"
-        ]
+        [ class "clearfix" ]
         [ div []
             [ h1 [ class "h1 center" ] [ text "Procedural Geometry with Elm" ]
             , contents
@@ -35,7 +33,7 @@ embeddedCanvas model =
         [ width 400
         , height 400
         , class "mx-auto"
-        , style [ ( "display", "block" ) ]
+        , style "display" "block"
         ]
         [ WebGL.entity
             vertexShader
