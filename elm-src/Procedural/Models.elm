@@ -7,15 +7,31 @@ type alias Color =
     Vec3
 
 
+type alias Point =
+    Vec3
+
+
+type alias Triangle =
+    ( Point, Point, Point )
+
+
+
+-- deprecated
+
+
 type alias Tris =
     List ( Vec3, Vec3, Vec3 )
 
 
 type alias Vertex =
-    { position : Vec3
-    , color : Vec3
+    { position : Point
+    , color : Color
     }
 
 
 type alias TriangleMesh =
     List ( Vertex, Vertex, Vertex )
+
+
+type alias ClosedPath =
+    List Point

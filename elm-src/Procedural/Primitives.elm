@@ -1,10 +1,10 @@
 module Procedural.Primitives exposing (..)
 
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
-import Procedural.Models exposing (Color, TriangleMesh, Tris, Vertex)
+import Procedural.Models exposing (Color, Point, Triangle, TriangleMesh, Vertex)
 
 
-toMesh : Color -> Tris -> TriangleMesh
+toMesh : Color -> List Triangle -> TriangleMesh
 toMesh color verts =
     verts
         |> List.map
@@ -16,12 +16,12 @@ toMesh color verts =
             )
 
 
-tri : Vec3 -> Vec3 -> Vec3 -> Tris
+tri : Vec3 -> Vec3 -> Vec3 -> List Triangle
 tri x y z =
     [ ( x, y, z ) ]
 
 
-quad : Vec3 -> Vec3 -> Vec3 -> Tris
+quad : Vec3 -> Vec3 -> Vec3 -> List Triangle
 quad corner x y =
     let
         { a, b, c, d } =
@@ -37,12 +37,12 @@ quad corner x y =
         ]
 
 
-cube : Float -> Vec3 -> Tris
+cube : Float -> Vec3 -> List Triangle
 cube s =
     prism s s s
 
 
-prism : Float -> Float -> Float -> Vec3 -> Tris
+prism : Float -> Float -> Float -> Vec3 -> List Triangle
 prism w h l center =
     let
         ( x, y, z ) =

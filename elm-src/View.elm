@@ -6,7 +6,7 @@ import Math.Matrix4 as Mat4 exposing (Mat4)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Models exposing (Model)
 import Msgs exposing (Msg)
-import Procedural.Main exposing (sampleTriangles)
+import Procedural.Main exposing (sampleScene)
 import Procedural.Models exposing (Vertex)
 import WebGL exposing (Mesh, Shader)
 
@@ -38,7 +38,7 @@ embeddedCanvas model =
         [ WebGL.entity
             vertexShader
             fragmentShader
-            (WebGL.triangles sampleTriangles)
+            (WebGL.triangles sampleScene)
             { perspective = perspective (model.currentTime / 1000) }
         ]
 
