@@ -3,7 +3,7 @@
 This project uses elm to generate meshes for use with 
 [elm-explorations/webgl](https://github.com/elm-explorations/webgl).
 
-![Demo House Scene](https://github.com/boombador/procedural-geometry/raw/readme-updates/public/house_scene.png)
+![Demo House Scene](https://github.com/boombador/procedural-geometry/raw/master/public/house_scene.png)
 
 No guarantees for your production server.
 
