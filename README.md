@@ -1,21 +1,26 @@
 # Procedural Geometry in Elm
 
-This project is an exploration of elm in the form of a library for generating meshes for use with 
-[elm-community/webgl](http://package.elm-lang.org/packages/elm-community/webgl/latest). In other words
-no guarantees for your production server.
+This project uses elm to generate meshes for use with 
+[elm-explorations/webgl](https://github.com/elm-explorations/webgl).
+
+![Demo House Scene](https://github.com/boombador/procedural-geometry/raw/readme-updates/public/house_scene.png)
+
+No guarantees for your production server.
 
 ## Setup
 
-This project uses yarn and elm, both of which are available as npm packages:
+Development currently assumes yarn, which you may install via `npm`:
 
-    npm install -g yarn elm
+    npm install -g yarn
 
-Once those dependencies are installed you can rely on the package managers:
+`npm` may also work as an untested substitute. With your package manager
+of choice, install the project's `node_modules`:
 
     yarn install
-    elm package install
 
-Note: These instructions haven't been attempted from a fresh install.
+This makes use of the `elm-webpack-loader`
+[project](https://www.npmjs.com/package/elm-webpack-loader) so you can leverage
+your webpack skillz.
 
 ## Running
 
